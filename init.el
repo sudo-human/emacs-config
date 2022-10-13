@@ -215,6 +215,13 @@
 
 (use-package ef-themes)
 
+(use-package lambda-themes
+  :straight (:type git :host github :repo "lambda-emacs/lambda-themes")
+  :custom
+  (lambda-themes-set-italic-comments t)
+  (lambda-themes-set-italic-keywords t)
+  (lambda-themes-set-variable-pitch t))
+
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
 
@@ -258,7 +265,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'ef-dark t))
+  (load-theme 'ef-night t))
   
 (use-package helpful
   :bind
