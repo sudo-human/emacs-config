@@ -2,6 +2,13 @@
 (add-to-list 'default-frame-alist '(height . 36))
 (add-to-list 'default-frame-alist '(width . 124))
 
+;; Very important!!! In some systems the encoding can fuck up.
+(setq locale-coding-system 'utf-8)
+(set-terminal-coding-system 'utf-8-unix)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+
 ;; Set Default font for all frames
 (add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
 ;; Beware of height
@@ -80,7 +87,9 @@
       scroll-margin 8
       auto-revert-check-vc-info t
       scroll-step 1
-      scroll-conservatively 1000)
+      scroll-conservatively 1000
+      scroll-preserve-screen-position 1
+      save-interprogram-paste-before-kill t)
 (save-place-mode t)
 (global-display-line-numbers-mode)
 (global-hl-line-mode)
@@ -94,6 +103,16 @@
   (add-hook mode (lambda ()
 		   (display-line-numbers-mode 0)
 		   (global-hl-line-mode 0))))
+
+(add-hook
+ 'after-make-frame-functions
+ (defun setup-blah-keys (frame)
+   (with-selected-frame frame
+     (when (display-graphic-p)
+       (define-key input-decode-map (kbd "C-i") [C-i])
+       (define-key input-decode-map (kbd "C-[") [C-lsb])
+       (define-key input-decode-map (kbd "C-m") [C-m])))))
+
 (use-package files
   :straight nil
   :custom
@@ -107,6 +126,10 @@
   (mode-require-final-newline nil)    ; Don't add newlines at the end of files
   (large-file-warning-threshold nil)) ; Open large files without requesting confirmation
 
+(use-package dired
+  :straight (:type built-in)
+  :custom
+  (dired-kill-when-opening-new-dired-buffer t))
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer)
