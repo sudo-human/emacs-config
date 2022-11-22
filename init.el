@@ -10,9 +10,9 @@
 (prefer-coding-system 'utf-8)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
+(add-to-list 'default-frame-alist '(font . "Iosevka Comfy-12"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "JetBrains Mono-12")
+(set-face-attribute 'default nil :font "Iosevka Comfy-12")
 
 (setq-default
  inhibit-startup-message t
@@ -134,6 +134,11 @@
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer)
 
+(use-package undo-tree
+  :diminish
+  :init
+  (global-undo-tree-mode))
+
 (use-package hydra)
 
 (defhydra hydra-zoom (global-map "<f2>")
@@ -219,7 +224,7 @@
   :bind
   (("C-," . embark-act)
    ("C-M-," . embark-dwim)
-   ("C-h B" . embark-bindings))
+   ("<f1> B" . embark-bindings))
   :init
   (setq prefix-help-command #'embark-prefix-help-command))
 
@@ -233,6 +238,8 @@
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package zenburn-theme)
+
+(use-package afternoon-theme)
 
 (use-package dracula-theme)
 
@@ -288,7 +295,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'ef-night t))
+  (load-theme 'zenburn t))
   
 (use-package helpful
   :bind
