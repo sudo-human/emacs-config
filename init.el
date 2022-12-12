@@ -10,9 +10,11 @@
 (prefer-coding-system 'utf-8)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "Iosevka Comfy-12"))
+;; (add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "Iosevka Comfy-12")
+(set-face-attribute 'default nil :font "JetBrains Mono-11")
+(set-face-font 'fixed-pitch "Ubuntu-11" t)
+(set-face-font 'variable-pitch "Ubuntu-11" t)
 
 (setq-default
  inhibit-startup-message t
@@ -51,7 +53,7 @@
 (use-package no-littering)
 (use-package diminish)
 (use-package delight)
-
+(use-package popup)
 (use-package gcmh
   :diminish
   :config
@@ -203,7 +205,7 @@
 ;; Orderless
 (use-package orderless
   :custom
-  (completion-styles '(orderless basic partial-completion))
+  (completion-styles '(basic partial-completion orderless))
   (orderless-matching-styles '(orderless-literal orderless-flex orderless-regexp)))
 
 ;; Enable rich annotations using the Marginalia package
@@ -252,6 +254,8 @@
   (lambda-themes-set-italic-keywords t)
   (lambda-themes-set-variable-pitch t))
 
+(use-package doom-themes)
+
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
 
@@ -295,7 +299,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'zenburn t))
+  (load-theme 'doom-zenburn t))
   
 (use-package helpful
   :bind
@@ -518,9 +522,11 @@
 (use-package rjsx-mode
   :mode "\\.[mc]?js")
 
+(use-package yaml-mode)
+
 (use-package fish-mode)
 
-(use-package lsp-treemacs)
+;; (use-package lsp-treemacs)
 
 (use-package flymake
   :config
@@ -564,7 +570,7 @@
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file)
   ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
@@ -635,8 +641,28 @@
 (use-package org
   :mode ("\\.org$" . org-mode))
 
-(use-package eyebrowse
-  :config
-  (eyebrowse-mode 1))
-
 (setq gc-cons-threshold (* 1 1024 1024))
+
+;; Utility functions
+
+;; need to improve this
+(defun copy-line (arg)
+"Copy lines (as many as prefix argument) in the kill ring.
+  Ease of use features:
+    - Move to start of next line.
+    - Appends the copy on sequential calls.
+    - Use newline as last char even on the last line of the buffer.
+    - If region is active, copy its lines."
+  (interactive "p")
+  (let ((beg (line-beginning-position))
+        (end (line-end-position arg)))
+    (when mark-active
+      (if (> (point) (mark))
+          (setq beg (save-excursion (goto-char (mark)) (line-beginning-position)))
+        (setq end (save-excursion (goto-char (mark)) (line-end-position)))))
+    (if (eq last-command 'copy-line)
+        (kill-append (buffer-substring beg end) (< end beg))
+      (kill-ring-save beg end)))
+  (kill-append "\n" nil)
+  (beginning-of-line (or (and arg (1+ arg)) 2))
+  (if (and arg (not (= 1 arg))) (message "%d lines copied" arg)))
