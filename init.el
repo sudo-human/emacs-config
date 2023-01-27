@@ -9,12 +9,14 @@
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
 
+(setq warning-minimum-level :emergency)
+
 ;; Set Default font for all frames
-;; (add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
 ;; Beware of height
 (set-face-attribute 'default nil :font "JetBrains Mono-11")
-(set-face-font 'fixed-pitch "Ubuntu-11" t)
-(set-face-font 'variable-pitch "Ubuntu-11" t)
+(set-face-font 'fixed-pitch "Ubuntu-14" t)
+(set-face-font 'variable-pitch "Ubuntu-14" t)
 
 (setq-default
  inhibit-startup-message t
@@ -93,6 +95,7 @@
       scroll-preserve-screen-position 1
       save-interprogram-paste-before-kill t)
 (save-place-mode t)
+(recentf-mode t)
 (global-display-line-numbers-mode)
 (global-hl-line-mode)
 (global-auto-revert-mode 1)
@@ -153,16 +156,16 @@
   :hook prog-mode)
 
 ;; Tree-sitter for faster and efficient language parsing and highlighting.
-(use-package tree-sitter
-  :delight " TS"
-  :config
-  (global-tree-sitter-mode)
-  (use-package ts-fold
-    :diminish
-    :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")))
+;; (use-package tree-sitter
+;;   :delight " TS"
+;;   :config
+;;   (global-tree-sitter-mode)
+;;   (use-package ts-fold
+;;     :diminish
+;;     :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")))
 
-(use-package tree-sitter-langs)
-(add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+;; (use-package tree-sitter-langs)
+;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
 
 (use-package all-the-icons)
 
@@ -262,6 +265,15 @@
 (defadvice load-theme (before clear-previous-themes activate)
   "Clear existing theme settings instead of layering them."
   (mapc #'disable-theme custom-enabled-themes))
+
+(if (not (version<= emacs-version "29.0"))
+    (use-package treesit-auto
+      :straight (:type git :host github :repo "renzmann/treesit-auto")
+      :config
+      (treesit-auto-apply-remap)
+      (advice-add 'treesit-install-language-grammar
+              :after (lambda (&rest _r) (treesit-auto-apply-remap)))))
+
 (use-package emacs
   :init
   ;; Add all your customizations prior to loading the themes
@@ -272,7 +284,7 @@
 	modus-themes-mode-line '(accented borderless)
 	;; modus-themes-hl-line '(accented)
 	modus-themes-parens-match '(bold intense)
-	tab-always-indent 'complete)
+	tab-always-indent t)
 
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -299,7 +311,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-zenburn t))
+  (load-theme 'doom-palenight t))
   
 (use-package helpful
   :bind
@@ -348,7 +360,7 @@
 	 ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -435,89 +447,90 @@
   ;; (setq consult-project-function #'consult--default-project--function)
   ;;;; 2. projectile.el (projectile-project-root)
   ;; (autoload 'projectile-project-root "projectile")
-  (setq consult-project-function (lambda (_) (projectile-project-root)))
+  ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
   ;;;; 3. vc.el (vc-root-dir)
   ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
   ;;;; 4. locate-dominating-file
   ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
   )
 (use-package consult-flycheck)
-(use-package consult-projectile)
+;; (use-package consult-projectile)
 
-(use-package eglot
-  :bind (("C-c l e" . eglot)
-         :map eglot-mode-map
-         ("C-c l r" . eglot-rename)
-         ("C-c l a" . eglot-code-actions)
-         ("C-c l f" . eglot-format))
-  :custom
-  (eglot-autoshutdown t)
-  :init
-  (which-key-add-key-based-replacements "C-c l" "eglot")
-  :config
-  (setcdr (assq 'java-mode eglot-server-programs)
-          `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-	    "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-	"-Dosgi.bundles.defaultStartLevel=4"
-	"-Declipse.product=org.eclipse.jdt.ls.core.product"
-	"-Dlog.level=ALL"
-	"-noverify"
-	"-Xmx1G"
-	"--add-modules=ALL-SYSTEM"
-	"--add-opens java.base/java.util=ALL-UNNAMED"
-	"--add-opens java.base/java.lang=ALL-UNNAMED"
-	"-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-	"-configuration ./config_linux")))
-
-(use-package consult-eglot
-  :after (eglot consult))
-
-;; (use-package lsp-mode
+;; (use-package eglot
+;;   :bind (("C-c l e" . eglot)
+;;          :map eglot-mode-map
+;;          ("C-c l r" . eglot-rename)
+;;          ("C-c l a" . eglot-code-actions)
+;;          ("C-c l f" . eglot-format))
 ;;   :custom
-;;   (lsp-completion-provider :none) ;; we use Corfu!
-;;   (lsp-file-watch-threshold 100000)
-;;   (lsp-keymap-prefix "C-c l")
+;;   (eglot-autoshutdown t)
 ;;   :init
-;;   (setq lsp-idle-delay 0)
-;;   (defun my/lsp-mode-setup-completion ()
-;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-;;           '(orderless))) ;; Configure orderless
-;;   :hook
-;;   (lsp-completion-mode . my/lsp-mode-setup-completion)
-;;   :commands (lsp lsp-deferred)
+;;   (which-key-add-key-based-replacements "C-c l" "eglot")
 ;;   :config
-;;   (dolist (mode '(c-mode-hook
-;; 		  c++-mode-hook
-;; 		  js2-mode
-;; 		  rjsx-mode
-;; 		  js-mode))
-;;     (add-hook mode 'lsp-deferred))
-;;   (use-package consult-lsp)
-;;   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+;;   (setcdr (assq 'java-mode eglot-server-programs)
+;;           `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
+;; 	    "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+;; 	"-Dosgi.bundles.defaultStartLevel=4"
+;; 	"-Declipse.product=org.eclipse.jdt.ls.core.product"
+;; 	"-Dlog.level=ALL"
+;; 	"-noverify"
+;; 	"-Xmx1G"
+;; 	"--add-modules=ALL-SYSTEM"
+;; 	"--add-opens java.base/java.util=ALL-UNNAMED"
+;; 	"--add-opens java.base/java.lang=ALL-UNNAMED"
+;; 	"-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+;; 	"-configuration ./config_linux")))
 
-;; (use-package dap-mode)
+;; (use-package consult-eglot
+;;   :after (eglot consult))
 
-;; (use-package lsp-ui
-;;   :after lsp-mode
-;;   :custom
-;;   (lsp-ui-doc-enable nil)
-;;   (lsp-ui-peek-enable nil)
-;;   (lsp-headerline-breadcrumb-enable nil))
+(use-package lsp-mode
+  :custom
+  ;; (lsp-completion-provider :none) ;; we use Corfu!
+  (lsp-file-watch-threshold 100000)
+  (lsp-keymap-prefix "C-c l")
+  :init
+  (setq lsp-idle-delay 0)
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))) ;; Configure orderless
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion)
+  :commands (lsp lsp-deferred)
+  :config
+  (dolist (mode '(c-mode-hook
+		  c++-mode-hook
+		  js2-mode
+		  rjsx-mode
+		  js-mode))
+    (add-hook mode 'lsp-deferred))
+  (use-package consult-lsp)
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
-;; (use-package lsp-java
-;;   :hook (java-mode . lsp-deferred))
+(use-package dap-mode)
 
-;; (use-package lsp-pyright
-;;   :ensure t
-;;   :init
-;;   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-;;   (setq lsp-pyright-multi-root nil)
-;;   :hook (python-mode . (lambda ()
-;;                           (require 'lsp-pyright)
-;;                           (lsp-deferred))))  ; or lsp
+(use-package lsp-ui
+  :after lsp-mode
+  :custom
+  (lsp-ui-doc-enable nil)
+  (lsp-ui-peek-enable nil)
+  (lsp-headerline-breadcrumb-enable nil))
+
+(use-package lsp-java
+  :hook (java-mode . lsp-deferred))
+
+(use-package lsp-pyright
+  :ensure t
+  :init
+  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+  (setq lsp-pyright-multi-root nil
+        lsp-pyright-typechecking-mode "off")
+  :hook (python-ts-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
-  :hook python-mode)
+  :hook python-ts-mode)
 
 (use-package rjsx-mode
   :mode "\\.[mc]?js")
@@ -526,60 +539,69 @@
 
 (use-package fish-mode)
 
-;; (use-package lsp-treemacs)
+(use-package lsp-treemacs)
 
-(use-package flymake
+;; (use-package flymake
+;;   :config
+;;   (defhydra flymake-map (flymake-mode-map "C-c f")
+;;     "flymake"
+;;     ("n" flymake-goto-next-error "next-error")
+;;     ("p" flymake-goto-prev-error "prev-error")
+;;     ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
+;;   :hook (prog-mode . flymake-mode))
+
+(use-package company
   :config
-  (defhydra flymake-map (flymake-mode-map "C-c f")
-    "flymake"
-    ("n" flymake-goto-next-error "next-error")
-    ("p" flymake-goto-prev-error "prev-error")
-    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
-  :hook (prog-mode . flymake-mode))
+  (global-company-mode)
+  (setq company-minimum-prefix-length 2
+        company-idle-delay 0.1))
 
-(use-package corfu
-  ;; Optional customizations
-  :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-auto-prefix 1)
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-  (corfu-preview-current nil)    ;; Disable current candidate preview
-  (corfu-preselect-first nil)    ;; Disable candidate preselection
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-  (corfu-scroll-margin 5)        ;; Use scroll margin
+(use-package company-posframe
+  :hook company-mode)
 
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
+;; (use-package corfu
+;;   ;; Optional customizations
+;;   :custom
+;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+;;   (corfu-auto t)                 ;; Enable auto completion
+;;   (corfu-auto-prefix 1)
+;;   (corfu-separator ?\s)          ;; Orderless field separator
+;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+;;   (corfu-preview-current nil)    ;; Disable current candidate preview
+;;   (corfu-preselect-first nil)    ;; Disable candidate preselection
+;;   ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+;;   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+;;   (corfu-scroll-margin 5)        ;; Use scroll margin
 
-  ;; Recommended: Enable Corfu globally.
-  ;; This is recommended since Dabbrev can be used globally (M-/).
-  ;; See also `corfu-excluded-modes'.
-  :init
-  (global-corfu-mode))
+;;   ;; Enable Corfu only for certain modes.
+;;   ;; :hook ((prog-mode . corfu-mode)
+;;   ;;        (shell-mode . corfu-mode)
+;;   ;;        (eshell-mode . corfu-mode))
+
+;;   ;; Recommended: Enable Corfu globally.
+;;   ;; This is recommended since Dabbrev can be used globally (M-/).
+;;   ;; See also `corfu-excluded-modes'.
+;;   :init
+;;   (global-corfu-mode))
 
 ;; Add extensions
-(use-package cape
-  :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
+;; (use-package cape
+;;   :init
+;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
+;;   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+;;   (add-to-list 'completion-at-point-functions #'cape-file)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-history)
+;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
+;;   )
 
 (use-package kind-icon
   :after corfu
@@ -593,12 +615,12 @@
   (setq vterm-kill-buffer-on-exit t
 	vterm-max-scrollback 5000))
 
-(use-package projectile
-  :bind ("C-x p" . projectile-command-map)
-  :custom
-  (projectile-project-search-path '(("~/Projects/" . 1)))
-  :config
-  (projectile-global-mode 1))
+;; (use-package projectile
+;;   :bind ("C-x p" . projectile-command-map)
+;;   :custom
+;;   (projectile-project-search-path '(("~/Projects/" . 1)))
+;;   :config
+;;   (projectile-global-mode 1))
 
 (use-package ibuffer
   :config
@@ -608,23 +630,23 @@
      :header-mouse-map ibuffer-size-header-map)
     (file-size-human-readable (buffer-size))))
 
-(use-package ibuffer-projectile
-  :hook (ibuffer . ibuffer-projectile-set-filter-groups))
+;; (use-package ibuffer-projectile
+;;   :hook (ibuffer . ibuffer-projectile-set-filter-groups))
 
 (use-package magit
   :config
   (magit-auto-revert-mode t))
 
-(use-package smartparens
-  :diminish
-  :config
-  (sp-use-smartparens-bindings)
-  (smartparens-global-mode))
+;; (use-package smartparens
+;;   :diminish
+;;   :config
+;;   (sp-use-smartparens-bindings)
+;;   (smartparens-global-mode))
 
 (use-package avy
   :bind ("M-j" . avy-goto-char-timer)
   :custom
-  (avy-timeout-seconds 0.5))
+  (avy-timeout-seconds 0.3))
 
 (use-package git-gutter
   :diminish
