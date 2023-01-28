@@ -51,37 +51,6 @@
 (setq user-emacs-directory (expand-file-name "~/.local/share/emacs/")
       url-history-file (expand-file-name "url/history" user-emacs-directory))
 
-;; Use no-littering to automatically set common paths to the new user-emacs-directory
-(use-package no-littering)
-(use-package diminish)
-(use-package delight)
-(use-package popup)
-(use-package gcmh
-  :diminish
-  :config
-  (setq gcmh-idle-delay 5
-	gcmh-high-cons-threshold (* 100 1024 1024))
-  (gcmh-mode 1))
-
-;; Inherit environment variables from Shell.
-(when (memq window-system '(mac ns x))
-  (use-package exec-path-from-shell
-    :config
-    (exec-path-from-shell-initialize)))
-
-(use-package bug-hunter)
-
-(use-package restart-emacs)
-
-(use-package free-keys)
-
-;; Keep customization settings in a temporary file (thanks Ambrevar!)
-(setq custom-file
-      (if (boundp 'server-socket-dir)
-          (expand-file-name "custom.el" server-socket-dir)
-        (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
-(load custom-file t)
-
 ;; Sensable Defaults
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -130,6 +99,38 @@
   (auto-save-default nil)             ; Stop creating #autosave# files
   (mode-require-final-newline nil)    ; Don't add newlines at the end of files
   (large-file-warning-threshold nil)) ; Open large files without requesting confirmation
+
+;; Use no-littering to automatically set common paths to the new user-emacs-directory
+(use-package no-littering)
+(use-package diminish)
+(use-package delight)
+(use-package popup)
+(use-package gcmh
+  :diminish
+  :config
+  (setq gcmh-idle-delay 5
+	gcmh-high-cons-threshold (* 100 1024 1024))
+  (gcmh-mode 1))
+
+;; Inherit environment variables from Shell.
+(when (memq window-system '(mac ns x))
+  (use-package exec-path-from-shell
+    :config
+    (exec-path-from-shell-initialize)))
+
+(use-package bug-hunter)
+
+(use-package restart-emacs)
+
+(use-package free-keys)
+
+;; Keep customization settings in a temporary file (thanks Ambrevar!)
+(setq custom-file
+      (if (boundp 'server-socket-dir)
+          (expand-file-name "custom.el" server-socket-dir)
+        (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
+(load custom-file t)
+
 
 (use-package dired
   :straight (:type built-in)
