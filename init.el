@@ -62,7 +62,8 @@
       scroll-step 1
       scroll-conservatively 1000
       scroll-preserve-screen-position 1
-      save-interprogram-paste-before-kill t)
+      save-interprogram-paste-before-kill t
+      find-program "fdfind")
 (save-place-mode t)
 (recentf-mode t)
 (global-display-line-numbers-mode)
@@ -86,6 +87,10 @@
        (define-key input-decode-map (kbd "C-i") [C-i])
        (define-key input-decode-map (kbd "C-[") [C-lsb])
        (define-key input-decode-map (kbd "C-m") [C-m])))))
+
+(use-package doom-modeline
+  :ensure t
+  :hook (after-init . doom-modeline-mode))
 
 (use-package files
   :straight nil
