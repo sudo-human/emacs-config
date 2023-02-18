@@ -12,9 +12,9 @@
 (setq warning-minimum-level :emergency)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "Iosevka-13")
+(set-face-attribute 'default nil :font "JetBrains Mono-11")
 (set-face-font 'fixed-pitch "Ubuntu-14" t)
 (set-face-font 'variable-pitch "Ubuntu-14" t)
 
@@ -98,7 +98,7 @@
 
   ;; Enable mood-line
   :config
-  (setq mood-line-glyph-alist mood-line-glyphs-unicode)
+  (setq mood-line-glyph-alist mood-line-glyphs-fira-code)
   (mood-line-mode))
 
 
