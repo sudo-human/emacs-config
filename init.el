@@ -94,6 +94,14 @@
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
 
+(use-package mood-line
+
+  ;; Enable mood-line
+  :config
+  (setq mood-line-glyph-alist mood-line-glyphs-unicode)
+  (mood-line-mode))
+
+
 (use-package display-fill-column-indicator
   :straight (:type built-in)
   :hook
@@ -590,7 +598,8 @@
   (lsp-file-watch-threshold 100000)
   (lsp-keymap-prefix "C-c l")
   :init
-  (setq lsp-idle-delay 0)
+  (setq lsp-idle-delay 0
+        lsp-signature-doc-lines 2)
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
           '(orderless))) ;; Configure orderless
@@ -668,7 +677,7 @@
         company-dabbrev-other-buffers nil
         company-dabbrev-downcase nil
         company-idle-delay 0.1
-        company-backends '((company-capf company-dabbrev-code company-dabbrev :with company-yasnippet)
+        company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev :with company-yasnippet)
                            company-dabbrev)))
 
 (use-package company-posframe
