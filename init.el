@@ -12,9 +12,9 @@
 (setq warning-minimum-level :emergency)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "JetBrains Mono-11")
+(set-face-attribute 'default nil :font "Iosevka-13")
 (set-face-font 'fixed-pitch "Ubuntu-14" t)
 (set-face-font 'variable-pitch "Ubuntu-14" t)
 
@@ -30,11 +30,11 @@
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
+      (bootstrap-version 6))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
@@ -52,6 +52,8 @@
       url-history-file (expand-file-name "url/history" user-emacs-directory))
 
 ;; Sensable Defaults
+(pixel-scroll-precision-mode t)
+(blink-cursor-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -88,9 +90,18 @@
        (define-key input-decode-map (kbd "C-[") [C-lsb])
        (define-key input-decode-map (kbd "C-m") [C-m])))))
 
-(use-package doom-modeline
-  :ensure t
-  :hook (after-init . doom-modeline-mode))
+;; (use-package doom-modeline
+;;   :ensure t
+;;   :hook (after-init . doom-modeline-mode))
+
+(use-package display-fill-column-indicator
+  :straight (:type built-in)
+  :hook
+  (python-ts-mode . display-fill-column-indicator-mode)
+  :init
+  (setq-default fill-column 79)
+  ;; (setq display-fill-column-indicator-character "|")
+  )
 
 (use-package files
   :straight nil
@@ -214,8 +225,92 @@
 ;; Orderless
 (use-package orderless
   :custom
-  (completion-styles '(basic partial-completion orderless))
-  (orderless-matching-styles '(orderless-literal orderless-flex orderless-regexp)))
+  (orderless-component-separator 'orderless-escapable-split-on-space)
+  (completion-category-defaults nil)
+  (completion-styles '(orderless basic))
+  (orderless-matching-styles '(
+                               orderless-regexp
+                               orderless-literal
+                               orderless-prefixes
+                               orderless-initialism
+                               ;; orderless-flex
+                               )))
+
+;; (use-package orderless
+;;   :custom
+;;   (completion-styles '(orderless))
+;;   (completion-category-defaults nil)    ; I want to be in control!
+;;   (completion-category-overrides
+;;    '((file (styles basic-remote ; For `tramp' hostname completion with `vertico'
+;;                    orderless
+;;                    ))
+;;      ))
+
+;;   (orderless-component-separator 'orderless-escapable-split-on-space)
+;;   (orderless-matching-styles
+;;    '(orderless-literal
+;;      orderless-prefixes
+;;      orderless-initialism
+;;      orderless-regexp
+;;      orderless-flex
+;;      ;; orderless-strict-leading-initialism
+;;      ;; orderless-strict-initialism
+;;      ;; orderless-strict-full-initialism
+;;      ;; orderless-without-literal          ; Recommended for dispatches instead
+;;      ))
+;;   (orderless-style-dispatchers
+;;    '(prot-orderless-literal-dispatcher
+;;      prot-orderless-strict-initialism-dispatcher
+;;      prot-orderless-flex-dispatcher
+;;      ))
+;;   :init
+;;   (defun orderless--strict-*-initialism (component &optional anchored)
+;;     "Match a COMPONENT as a strict initialism, optionally ANCHORED.
+;; The characters in COMPONENT must occur in the candidate in that
+;; order at the beginning of subsequent words comprised of letters.
+;; Only non-letters can be in between the words that start with the
+;; initials.
+
+;; If ANCHORED is `start' require that the first initial appear in
+;; the first word of the candidate.  If ANCHORED is `both' require
+;; that the first and last initials appear in the first and last
+;; words of the candidate, respectively."
+;;     (orderless--separated-by
+;;         '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)))
+;;       (cl-loop for char across component collect `(seq word-start ,char))
+;;       (when anchored '(seq (group buffer-start) (zero-or-more (not alpha))))
+;;       (when (eq anchored 'both)
+;;         '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)) eol))))
+
+;;   (defun orderless-strict-initialism (component)
+;;     "Match a COMPONENT as a strict initialism.
+;; This means the characters in COMPONENT must occur in the
+;; candidate in that order at the beginning of subsequent words
+;; comprised of letters.  Only non-letters can be in between the
+;; words that start with the initials."
+;;     (orderless--strict-*-initialism component))
+
+;;   (defun prot-orderless-literal-dispatcher (pattern _index _total)
+;;     "Literal style dispatcher using the equals sign as a suffix.
+;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
+;; parses its input."
+;;     (when (string-suffix-p "=" pattern)
+;;       `(orderless-literal . ,(substring pattern 0 -1))))
+
+;;   (defun prot-orderless-strict-initialism-dispatcher (pattern _index _total)
+;;     "Leading initialism  dispatcher using the comma suffix.
+;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
+;; parses its input."
+;;     (when (string-suffix-p "," pattern)
+;;       `(orderless-strict-initialism . ,(substring pattern 0 -1))))
+
+;;   (defun prot-orderless-flex-dispatcher (pattern _index _total)
+;;     "Flex  dispatcher using the tilde suffix.
+;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
+;; parses its input."
+;;     (when (string-suffix-p "." pattern)
+;;       `(orderless-flex . ,(substring pattern 0 -1))))
+;;   )
 
 ;; Enable rich annotations using the Marginalia package
 (use-package marginalia
@@ -274,11 +369,10 @@
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
-      :straight (:type git :host github :repo "renzmann/treesit-auto")
+      :demand t
       :config
-      (treesit-auto-apply-remap)
-      (advice-add 'treesit-install-language-grammar
-              :after (lambda (&rest _r) (treesit-auto-apply-remap)))))
+      (setq treesit-auto-install 'prompt)
+      (global-treesit-auto-mode)))
 
 (use-package emacs
   :init
@@ -317,7 +411,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-palenight t))
+  (load-theme 'doom-moonlight t))
   
 (use-package helpful
   :bind
@@ -430,13 +524,13 @@
   ;; For some commands and buffer sources it is useful to configure the
   ;; :preview-key on a per-command basis using the `consult-customize' macro.
   (consult-customize
-   consult-theme
-   :preview-key '(:debounce 0.2 any)
+   consult-theme :preview-key '(:debounce 0.2 any)
    consult-ripgrep consult-git-grep consult-grep
    consult-bookmark consult-recent-file consult-xref
-   consult--source-bookmark consult--source-recent-file
-   consult--source-project-recent-file
-   :preview-key (kbd "M-."))
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   :preview-key "M-."
+   :preview-key '(:debounce 0.4 any))
 
   ;; Optionally configure the narrowing key.
   ;; Both < and C-+ work reasonably well.
@@ -526,7 +620,6 @@
   :hook (java-mode . lsp-deferred))
 
 (use-package lsp-pyright
-  :ensure t
   :init
   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
   (setq lsp-pyright-multi-root nil
@@ -534,6 +627,15 @@
   :hook (python-ts-mode . (lambda ()
                           (require 'lsp-pyright)
                           (lsp-deferred))))  ; or lsp
+
+(use-package yasnippet
+  :config
+  (yas-reload-all)
+  (dolist (mode '(org-mode-hook
+		  prog-mode-hook))
+    (add-hook mode 'yas-minor-mode)))
+
+(use-package yasnippet-snippets)
 
 (use-package pyvenv
   :hook python-ts-mode)
@@ -560,7 +662,14 @@
   :config
   (global-company-mode)
   (setq company-minimum-prefix-length 2
-        company-idle-delay 0.1))
+        company-show-quick-access t
+        company-selection-wrap-around t
+        company-tooltip-align-annotations t
+        company-dabbrev-other-buffers nil
+        company-dabbrev-downcase nil
+        company-idle-delay 0.1
+        company-backends '((company-capf company-dabbrev-code company-dabbrev :with company-yasnippet)
+                           company-dabbrev)))
 
 (use-package company-posframe
   :hook company-mode)
@@ -591,7 +700,7 @@
 ;;   :init
 ;;   (global-corfu-mode))
 
-;; Add extensions
+;; ;; Add extensions
 ;; (use-package cape
 ;;   :init
 ;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
@@ -636,6 +745,31 @@
      :header-mouse-map ibuffer-size-header-map)
     (file-size-human-readable (buffer-size))))
 
+(use-package ibuffer-project
+  :after (ibuffer project)
+  :config
+  (add-hook
+   'ibuffer-hook
+   (lambda ()
+     (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+     (unless (eq ibuffer-sorting-mode 'project-file-relative)
+       (ibuffer-do-sort-by-project-file-relative))))
+
+  (add-hook 'ibuffer-hook
+              (lambda ()
+                (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+                (unless (eq ibuffer-sorting-mode 'project-file-relative)
+                  (ibuffer-do-sort-by-project-file-relative))))
+
+  (setq ibuffer-formats
+   '((mark modified read-only locked " "
+           (name 18 18 :left :elide)
+           " "
+           (size 9 -1 :right)
+           " "
+           (mode 16 16 :left :elide)
+           " " project-file-relative))))
+
 ;; (use-package ibuffer-projectile
 ;;   :hook (ibuffer . ibuffer-projectile-set-filter-groups))
 
@@ -658,9 +792,7 @@
   :diminish
   :hook (prog-mode . git-gutter-mode)
   :config
-  (setq git-gutter:update-interval 0.02))
-
-(use-package git-gutter-fringe)
+  (setq git-gutter:update-interval 0.1))
 
 ;; (use-package discover
 ;;   :config
