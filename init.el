@@ -59,6 +59,7 @@
 (scroll-bar-mode -1)
 (defalias 'yes-or-no-p 'y-or-n-p)
 (setq display-line-numbers-type 'relative
+      display-line-numbers-width-start t
       scroll-margin 8
       auto-revert-check-vc-info t
       scroll-step 1
@@ -73,13 +74,13 @@
 (global-auto-revert-mode 1)
 (make-variable-buffer-local 'global-hl-line-mode)
 (dolist (mode '(org-mode-hook
-		term-mode-hook
-		vterm-mode-hook
-		shell-mode-hook
-		eshell-mode-hook))
+                term-mode-hook
+                vterm-mode-hook
+                shell-mode-hook
+                eshell-mode-hook))
   (add-hook mode (lambda ()
-		   (display-line-numbers-mode 0)
-		   (global-hl-line-mode 0))))
+                   (display-line-numbers-mode 0)
+                   (global-hl-line-mode 0))))
 
 (add-hook
  'after-make-frame-functions
@@ -94,13 +95,32 @@
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
 
+(use-package paren
+  :straight (:type built-in)
+  :custom
+  (show-paren-when-point-inside-paren t))
+
 (use-package mood-line
 
   ;; Enable mood-line
   :config
-  (setq mood-line-glyph-alist mood-line-glyphs-fira-code)
-  (mood-line-mode))
+  (setq mood-line-glyph-alist   '((:checker-info . ?)
+                                  (:checker-issues . ?⚑)
+                                  (:checker-good . ?✔)
+                                  (:checker-checking . ?⏳)
+                                  (:checker-errored . ?✖)
+                                  (:checker-interrupted . ?⏸)
 
+                                  (:vc-added . ?✚)
+                                  (:vc-needs-merge . ?⟷)
+                                  (:vc-needs-update . ?↓)
+                                  (:vc-conflict . ?✖)
+                                  (:vc-good . ?✔)
+
+                                  (:buffer-narrowed . ?▼)
+                                  (:buffer-modified . ?●)
+                                  (:buffer-read-only . ?■)))
+  (mood-line-mode))
 
 (use-package display-fill-column-indicator
   :straight (:type built-in)
@@ -133,7 +153,7 @@
   :diminish
   :config
   (setq gcmh-idle-delay 5
-	gcmh-high-cons-threshold (* 100 1024 1024))
+        gcmh-high-cons-threshold (* 100 1024 1024))
   (gcmh-mode 1))
 
 ;; Inherit environment variables from Shell.
@@ -147,6 +167,17 @@
 (use-package restart-emacs)
 
 (use-package free-keys)
+
+(use-package multiple-cursors
+  :custom
+  (mc/always-run-for-all t)
+  :bind
+  (("C-*" . mc/edit-lines)
+   ("C->" . mc/mark-next-like-this)
+   ("C-<" . mc/mark-previous-like-this)
+   ("C-M->" . mc/skip-to-next-like-this)
+   ("C-M-<" . mc/skip-to-previous-like-this)
+   ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
 ;; Keep customization settings in a temporary file (thanks Ambrevar!)
 (setq custom-file
@@ -325,7 +356,7 @@
   ;; Either bind `marginalia-cycle' globally or only in the minibuffer
   :bind (("M-A" . marginalia-cycle)
          :map minibuffer-local-map
-	 ("M-A" . marginalia-cycle))
+         ("M-A" . marginalia-cycle))
 
   ;; The :init configuration is always executed (Not lazy!)
   :init
@@ -387,12 +418,12 @@
   ;; Add all your customizations prior to loading the themes
   (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
-	modus-themes-subtle-line-numbers t
+        modus-themes-subtle-line-numbers t
         modus-themes-region '(bg-only no-extend)
-	modus-themes-mode-line '(accented borderless)
-	;; modus-themes-hl-line '(accented)
-	modus-themes-parens-match '(bold intense)
-	tab-always-indent t)
+        modus-themes-mode-line '(accented borderless)
+        ;; modus-themes-hl-line '(accented)
+        modus-themes-parens-match '(bold intense)
+        tab-always-indent t)
 
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -420,7 +451,7 @@
   :config
   ;; Load the theme of your choice:
   (load-theme 'doom-moonlight t))
-  
+
 (use-package helpful
   :bind
   ([remap describe-function] . helpful-callable)
@@ -440,6 +471,15 @@
   :diminish)
 
 (use-package treemacs)
+
+(use-package yasnippet
+  :config
+  (yas-reload-all)
+  (dolist (mode '(org-mode-hook
+                  prog-mode-hook))
+    (add-hook mode 'yas-minor-mode)))
+
+(use-package yasnippet-snippets)
 
 (use-package wgrep)
 (use-package bookmark-view)
@@ -465,7 +505,7 @@
          ;; Other custom bindings
          ("M-y" . consult-yank-pop)                ;; orig. yank-pop
          ("<help> a" . consult-apropos)            ;; orig. apropos-command
-	 ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
+         ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
          ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
@@ -577,17 +617,17 @@
 ;;   :config
 ;;   (setcdr (assq 'java-mode eglot-server-programs)
 ;;           `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-;; 	    "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-;; 	"-Dosgi.bundles.defaultStartLevel=4"
-;; 	"-Declipse.product=org.eclipse.jdt.ls.core.product"
-;; 	"-Dlog.level=ALL"
-;; 	"-noverify"
-;; 	"-Xmx1G"
-;; 	"--add-modules=ALL-SYSTEM"
-;; 	"--add-opens java.base/java.util=ALL-UNNAMED"
-;; 	"--add-opens java.base/java.lang=ALL-UNNAMED"
-;; 	"-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-;; 	"-configuration ./config_linux")))
+;;          "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+;;      "-Dosgi.bundles.defaultStartLevel=4"
+;;      "-Declipse.product=org.eclipse.jdt.ls.core.product"
+;;      "-Dlog.level=ALL"
+;;      "-noverify"
+;;      "-Xmx1G"
+;;      "--add-modules=ALL-SYSTEM"
+;;      "--add-opens java.base/java.util=ALL-UNNAMED"
+;;      "--add-opens java.base/java.lang=ALL-UNNAMED"
+;;      "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+;;      "-configuration ./config_linux")))
 
 ;; (use-package consult-eglot
 ;;   :after (eglot consult))
@@ -608,10 +648,10 @@
   :commands (lsp lsp-deferred)
   :config
   (dolist (mode '(c-mode-hook
-		  c++-mode-hook
-		  js2-mode
-		  rjsx-mode
-		  js-mode))
+                  c++-mode-hook
+                  js2-mode
+                  rjsx-mode
+                  js-mode))
     (add-hook mode 'lsp-deferred))
   (use-package consult-lsp)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -634,17 +674,8 @@
   (setq lsp-pyright-multi-root nil
         lsp-pyright-typechecking-mode "off")
   :hook (python-ts-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp-deferred))))  ; or lsp
-
-(use-package yasnippet
-  :config
-  (yas-reload-all)
-  (dolist (mode '(org-mode-hook
-		  prog-mode-hook))
-    (add-hook mode 'yas-minor-mode)))
-
-(use-package yasnippet-snippets)
+                            (require 'lsp-pyright)
+                            (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook python-ts-mode)
@@ -677,7 +708,7 @@
         company-dabbrev-other-buffers nil
         company-dabbrev-downcase nil
         company-idle-delay 0.1
-        company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev :with company-yasnippet)
+        company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev company-yasnippet)
                            company-dabbrev)))
 
 (use-package company-posframe
@@ -737,7 +768,7 @@
 (use-package vterm
   :config
   (setq vterm-kill-buffer-on-exit t
-	vterm-max-scrollback 5000))
+        vterm-max-scrollback 5000))
 
 ;; (use-package projectile
 ;;   :bind ("C-x p" . projectile-command-map)
@@ -750,8 +781,8 @@
   :config
   (define-ibuffer-column size
     (:name "Size"
-     :inline t
-     :header-mouse-map ibuffer-size-header-map)
+           :inline t
+           :header-mouse-map ibuffer-size-header-map)
     (file-size-human-readable (buffer-size))))
 
 (use-package ibuffer-project
@@ -765,19 +796,19 @@
        (ibuffer-do-sort-by-project-file-relative))))
 
   (add-hook 'ibuffer-hook
-              (lambda ()
-                (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-                (unless (eq ibuffer-sorting-mode 'project-file-relative)
-                  (ibuffer-do-sort-by-project-file-relative))))
+            (lambda ()
+              (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+              (unless (eq ibuffer-sorting-mode 'project-file-relative)
+                (ibuffer-do-sort-by-project-file-relative))))
 
   (setq ibuffer-formats
-   '((mark modified read-only locked " "
-           (name 18 18 :left :elide)
-           " "
-           (size 9 -1 :right)
-           " "
-           (mode 16 16 :left :elide)
-           " " project-file-relative))))
+        '((mark modified read-only locked " "
+                (name 18 18 :left :elide)
+                " "
+                (size 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " " project-file-relative))))
 
 ;; (use-package ibuffer-projectile
 ;;   :hook (ibuffer . ibuffer-projectile-set-filter-groups))
@@ -801,7 +832,7 @@
   :diminish
   :hook (prog-mode . git-gutter-mode)
   :config
-  (setq git-gutter:update-interval 0.1))
+  (setq git-gutter:update-interval 0.2))
 
 ;; (use-package discover
 ;;   :config
@@ -816,7 +847,7 @@
 
 ;; need to improve this
 (defun copy-line (arg)
-"Copy lines (as many as prefix argument) in the kill ring.
+  "Copy lines (as many as prefix argument) in the kill ring.
   Ease of use features:
     - Move to start of next line.
     - Appends the copy on sequential calls.
@@ -835,3 +866,8 @@
   (kill-append "\n" nil)
   (beginning-of-line (or (and arg (1+ arg)) 2))
   (if (and arg (not (= 1 arg))) (message "%d lines copied" arg)))
+
+(defun ps/indent-buffer ()
+  "Indent the current buffer"
+  (interactive)
+  (indent-region (point-min) (point-max)))
