@@ -53,6 +53,8 @@
 
 ;; Sensable Defaults
 (pixel-scroll-precision-mode t)
+(mouse-avoidance-mode 'cat-and-mouse)
+(context-menu-mode t)
 (blink-cursor-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -91,6 +93,52 @@
        (define-key input-decode-map (kbd "C-[") [C-lsb])
        (define-key input-decode-map (kbd "C-m") [C-m])))))
 
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t
+        evil-want-keybinding nil
+        evil-want-C-i-jump t
+        evil-want-C-u-scroll t
+        evil-split-window-below t
+        evil-vsplit-window-right t
+        evil-undo-system 'undo-tree
+        evil-symbol-word-search t)
+  :config
+  (evil-mode))
+
+(use-package evil-leader
+  :straight t
+  :after evil
+  :config
+  (global-evil-leader-mode)
+  (evil-leader/set-leader "<SPC>"))
+
+(use-package evil-collection
+  :defer 1
+  :straight t
+  :after evil
+  :config
+  (setq evil-collection-magit-want-horizontal-movement t)
+  (setq evil-collection-magit-use-y-for-yank t)
+  (evil-collection-init))
+
+;; Evil commentary
+(use-package evil-commentary
+  :straight t
+  :defer 1
+  :diminish
+  :config (evil-commentary-mode))
+
+;; Evil surround
+(use-package evil-surround
+  :defer 1
+  :straight t
+  :config (global-evil-surround-mode 1))
+
+(use-package evil-textobj-line :straight t :defer 1)
+(use-package evil-textobj-syntax :straight t :defer 1)
+
 ;; (use-package doom-modeline
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
@@ -99,6 +147,18 @@
   :straight (:type built-in)
   :custom
   (show-paren-when-point-inside-paren t))
+
+(use-package hl-todo
+  :straight t
+  :defer 1
+  :config
+  (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
+                                ("FIXME" . "#FF0000")
+                                ("GOTCHA" . "#FF4500")
+                                ("STUB" . "#1E90FF")
+                                ("NOTE" . "#0090FF")
+                                ("XXX" . "#AF0494")))
+  (global-hl-todo-mode))
 
 (use-package mood-line
 
@@ -127,7 +187,7 @@
   :hook
   (python-ts-mode . display-fill-column-indicator-mode)
   :init
-  (setq-default fill-column 79)
+  (setq-default fill-column 100)
   ;; (setq display-fill-column-indicator-character "|")
   )
 
@@ -601,6 +661,7 @@
   ;;;; 4. locate-dominating-file
   ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
   )
+
 (use-package consult-flycheck)
 ;; (use-package consult-projectile)
 
@@ -632,6 +693,8 @@
 ;; (use-package consult-eglot
 ;;   :after (eglot consult))
 
+(use-package flycheck)
+
 (use-package lsp-mode
   :custom
   ;; (lsp-completion-provider :none) ;; we use Corfu!
@@ -653,6 +716,23 @@
                   rjsx-mode
                   js-mode))
     (add-hook mode 'lsp-deferred))
+  ;; Add buffer local Flycheck checkers after LSP for different major modes.
+  (defvar-local my-flycheck-local-cache nil)
+  (defun my-flycheck-local-checker-get (fn checker property)
+    ;; Only check the buffer local cache for the LSP checker, otherwise we get
+    ;; infinite loops.
+    (if (eq checker 'lsp)
+        (or (alist-get property my-flycheck-local-cache)
+            (funcall fn checker property))
+      (funcall fn checker property)))
+  (advice-add 'flycheck-checker-get
+              :around 'my-flycheck-local-checker-get)
+
+  (add-hook 'lsp-managed-mode-hook
+            (lambda ()
+              (when (derived-mode-p 'python-ts-mode)
+                (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+
   (use-package consult-lsp)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
@@ -828,11 +908,10 @@
   :custom
   (avy-timeout-seconds 0.3))
 
-(use-package git-gutter
-  :diminish
-  :hook (prog-mode . git-gutter-mode)
+(use-package git-gutter-fringe
   :config
-  (setq git-gutter:update-interval 0.2))
+  (setq git-gutter:update-interval 0.1)
+  (global-git-gutter-mode))
 
 ;; (use-package discover
 ;;   :config
