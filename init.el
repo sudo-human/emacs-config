@@ -12,9 +12,9 @@
 (setq warning-minimum-level :emergency)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+(add-to-list 'default-frame-alist '(font . "M PLUS 1 Code-13"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "JetBrains Mono-11")
+(set-face-attribute 'default nil :font "M PLUS 1 Code-13")
 (set-face-font 'fixed-pitch "Ubuntu-14" t)
 (set-face-font 'variable-pitch "Ubuntu-14" t)
 
@@ -27,6 +27,7 @@
  vc-follow-symlinks t)
 
 ;; Install straight.el
+(setq straight-repository-branch "develop")
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
