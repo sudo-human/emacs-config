@@ -288,6 +288,7 @@
 ;; Vertico for better completion
 (straight-use-package '( vertico :files (:defaults "extensions/*")
                          :includes (vertico-buffer
+                                    vertico-multiform
                                     vertico-directory
                                     vertico-flat
                                     vertico-indexed
@@ -296,30 +297,56 @@
                                     vertico-repeat
                                     vertico-reverse)))
 (use-package vertico
-  :init
-  (vertico-mode)
-
-  ;; Different scroll margin
-  (setq vertico-scroll-margin 0)
-
-  ;; Show more candidates
-  ;;(setq vertico-count 20)
-
-  ;; Grow and shrink the Vertico minibuffer
-  ;; (setq vertico-resize t)
-
-  ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
-  (setq vertico-cycle t)
+  :straight t
   :config
-  (use-package vertico-mouse
-    :config
-    (vertico-mouse-mode)))
+  (setq vertico-count 13)
+  (setq vertico-cycle t)
+  (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
+
+  (define-key vertico-map (kbd "M-n") 'vertico-next-group)
+  (define-key vertico-map (kbd "M-p") 'vertico-previous-group)
+
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+  ;; Do not allow the cursor in the minibuffer prompt
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+  (vertico-mode)
+  (vertico-multiform-mode)
+  (setq vertico-multiform-commands
+        '((consult-ripgrep buffer indexed)
+          (consult-xref buffer indexed)
+          (consult-imenu buffer)
+          (consult-buffer)
+          (project-find-file reverse)
+          (xref-find-references buffer)))
+  (setq vertico-multiform-categories
+        '((file grid)
+          (consult-grep buffer))))
+
+(use-package vertico-mouse
+  :after vertico
+  :config
+  (vertico-mouse-mode))
+
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :init
   (savehist-mode))
 
-(use-package vertico-directory)
+
+(use-package vertico-directory
+  :after vertico
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 ;; Orderless
 (use-package orderless
