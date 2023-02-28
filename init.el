@@ -15,8 +15,8 @@
 (add-to-list 'default-frame-alist '(font . "M PLUS 1 Code-13"))
 ;; Beware of height
 (set-face-attribute 'default nil :font "M PLUS 1 Code-13")
-(set-face-font 'fixed-pitch "Ubuntu-14" t)
-(set-face-font 'variable-pitch "Ubuntu-14" t)
+(set-face-attribute 'fixed-pitch nil :font "M PLUS 2-13")
+(set-face-attribute 'variable-pitch nil :font "M PLUS 2-13")
 
 (setq-default
  inhibit-startup-message t
@@ -140,6 +140,12 @@
 (use-package evil-textobj-line :straight t :defer 1)
 (use-package evil-textobj-syntax :straight t :defer 1)
 
+;; Matchit
+(use-package evil-matchit
+  :straight t
+  :defer 1
+  :config (global-evil-matchit-mode 1))
+
 ;; (use-package doom-modeline
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
@@ -251,7 +257,18 @@
 (use-package dired
   :straight (:type built-in)
   :custom
-  (dired-kill-when-opening-new-dired-buffer t))
+  (dired-kill-when-opening-new-dired-buffer t)
+  :config
+  (add-hook 'dired-mode-hook
+            (lambda ()
+              (dired-hide-details-mode))))
+
+;; Github like git info in dired
+(use-package dired-git-info
+  :straight t
+  :defer t
+  :config
+  (add-hook 'dired-hook 'dired-git-info-auto-enable))
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer)
@@ -651,7 +668,7 @@
   ;; Configure other variables and modes in the :config section,
   ;; after lazily loading the package.
   :config
-
+  (evil-set-command-property 'consult-imenu :jump t)
   ;; Optionally configure preview. The default value
   ;; is 'any, such that any key triggers the preview.
   ;; (setq consult-preview-key 'any)
@@ -689,6 +706,13 @@
   ;;;; 4. locate-dominating-file
   ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
   )
+
+(use-package consult-git-log-grep
+  :straight t
+  :after consult
+  :commands (consult-git-log-grep)
+  :custom
+  (consult-git-log-grep-open-function #'magit-show-commit))
 
 (use-package consult-flycheck)
 ;; (use-package consult-projectile)
@@ -932,9 +956,11 @@
 ;;   (smartparens-global-mode))
 
 (use-package avy
-  :bind ("M-j" . avy-goto-char-timer)
+  :after evil-leader
   :custom
-  (avy-timeout-seconds 0.3))
+  (avy-timeout-seconds 0.3)
+  :config
+  (evil-leader/set-key "f" 'avy-goto-char-timer))
 
 (use-package git-gutter-fringe
   :config
@@ -947,6 +973,25 @@
 
 (use-package org
   :mode ("\\.org$" . org-mode))
+
+;; Restclient
+(use-package restclient
+  :straight t
+  :defer t
+  :mode ("\\.rest\\'". restclient-mode)
+  :config (add-hook 'restclient-mode-hook (lambda ()
+                                            (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
+
+;; Process management
+(use-package proced
+  :commands proced
+  :config
+  (setq proced-enable-color-flag t))
+
+(use-package redacted
+  :straight t
+  :commands (redacted-mode)
+  :config (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
 
 (setq gc-cons-threshold (* 1 1024 1024))
 
