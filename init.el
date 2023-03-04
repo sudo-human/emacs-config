@@ -55,6 +55,7 @@
 ;; Sensable Defaults
 (pixel-scroll-precision-mode t)
 (mouse-avoidance-mode 'cat-and-mouse)
+(electric-pair-mode 1)
 (context-menu-mode t)
 (blink-cursor-mode -1)
 (tool-bar-mode -1)
@@ -69,6 +70,7 @@
       scroll-conservatively 1000
       scroll-preserve-screen-position 1
       save-interprogram-paste-before-kill t
+      isearch-lazy-count t
       find-program "fdfind")
 (save-place-mode t)
 (recentf-mode t)
@@ -94,61 +96,28 @@
        (define-key input-decode-map (kbd "C-[") [C-lsb])
        (define-key input-decode-map (kbd "C-m") [C-m])))))
 
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t
-        evil-want-keybinding nil
-        evil-want-C-i-jump t
-        evil-want-C-u-scroll t
-        evil-split-window-below t
-        evil-vsplit-window-right t
-        evil-undo-system 'undo-tree
-        evil-symbol-word-search t)
-  :config
-  (evil-mode))
-
-(use-package evil-leader
-  :straight t
-  :after evil
-  :config
-  (global-evil-leader-mode)
-  (evil-leader/set-leader "<SPC>"))
-
-(use-package evil-collection
-  :defer 1
-  :straight t
-  :after evil
-  :config
-  (setq evil-collection-magit-want-horizontal-movement t)
-  (setq evil-collection-magit-use-y-for-yank t)
-  (evil-collection-init))
-
-;; Evil commentary
-(use-package evil-commentary
-  :straight t
-  :defer 1
-  :diminish
-  :config (evil-commentary-mode))
-
-;; Evil surround
-(use-package evil-surround
-  :defer 1
-  :straight t
-  :config (global-evil-surround-mode 1))
-
-(use-package evil-textobj-line :straight t :defer 1)
-(use-package evil-textobj-syntax :straight t :defer 1)
-
-;; Matchit
-(use-package evil-matchit
-  :straight t
-  :defer 1
-  :config (global-evil-matchit-mode 1))
-
 ;; (use-package doom-modeline
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
+
+;; (use-package harpoon
+;;   :straight t
+;;   :after evil-leader
+;;   :config
+;;   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/"))
+;;   (evil-leader/set-key "h H" 'harpoon-toggle-file)
+;;   (evil-leader/set-key "h r" 'harpoon-toggle-quick-menu)
+;;   (evil-leader/set-key "h c" 'harpoon-clear)
+;;   (evil-leader/set-key "h f" 'harpoon-add-file)
+;;   (evil-leader/set-key "h j" 'harpoon-go-to-1)
+;;   (evil-leader/set-key "h k" 'harpoon-go-to-2)
+;;   (evil-leader/set-key "h l" 'harpoon-go-to-3)
+;;   (evil-leader/set-key "h ;" 'harpoon-go-to-4)
+;;   (evil-leader/set-key "h h j" 'harpoon-go-to-5)
+;;   (evil-leader/set-key "h h k" 'harpoon-go-to-6)
+;;   (evil-leader/set-key "h h l" 'harpoon-go-to-7)
+;;   (evil-leader/set-key "h h ;" 'harpoon-go-to-8)
+;;   (evil-leader/set-key "h h f" 'harpoon-go-to-9))
 
 (use-package paren
   :straight (:type built-in)
@@ -168,7 +137,7 @@
   (global-hl-todo-mode))
 
 (use-package mood-line
-
+  :disabled t
   ;; Enable mood-line
   :config
   (setq mood-line-glyph-alist   '((:checker-info . ?)
@@ -271,7 +240,7 @@
   (add-hook 'dired-hook 'dired-git-info-auto-enable))
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-set-key [f5] 'revert-buffer)
+(global-set-key [f5] 'revert-buffer-quick)
 
 (use-package undo-tree
   :diminish
@@ -528,7 +497,7 @@
         modus-themes-mode-line '(accented borderless)
         ;; modus-themes-hl-line '(accented)
         modus-themes-parens-match '(bold intense)
-        tab-always-indent t)
+        tab-always-indent 'complete)
 
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -668,7 +637,6 @@
   ;; Configure other variables and modes in the :config section,
   ;; after lazily loading the package.
   :config
-  (evil-set-command-property 'consult-imenu :jump t)
   ;; Optionally configure preview. The default value
   ;; is 'any, such that any key triggers the preview.
   ;; (setq consult-preview-key 'any)
@@ -749,7 +717,7 @@
 
 (use-package lsp-mode
   :custom
-  ;; (lsp-completion-provider :none) ;; we use Corfu!
+  (lsp-completion-provider :none) ;; we use Corfu!
   (lsp-file-watch-threshold 100000)
   (lsp-keymap-prefix "C-c l")
   :init
@@ -769,21 +737,21 @@
                   js-mode))
     (add-hook mode 'lsp-deferred))
   ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  (defvar-local my-flycheck-local-cache nil)
-  (defun my-flycheck-local-checker-get (fn checker property)
-    ;; Only check the buffer local cache for the LSP checker, otherwise we get
-    ;; infinite loops.
-    (if (eq checker 'lsp)
-        (or (alist-get property my-flycheck-local-cache)
-            (funcall fn checker property))
-      (funcall fn checker property)))
-  (advice-add 'flycheck-checker-get
-              :around 'my-flycheck-local-checker-get)
+  ;; (defvar-local my-flycheck-local-cache nil)
+  ;; (defun my-flycheck-local-checker-get (fn checker property)
+  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+  ;;   ;; infinite loops.
+  ;;   (if (eq checker 'lsp)
+  ;;       (or (alist-get property my-flycheck-local-cache)
+  ;;           (funcall fn checker property))
+  ;;     (funcall fn checker property)))
+  ;; (advice-add 'flycheck-checker-get
+  ;;             :around 'my-flycheck-local-checker-get)
 
-  (add-hook 'lsp-managed-mode-hook
-            (lambda ()
-              (when (derived-mode-p 'python-ts-mode)
-                (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+  ;; (add-hook 'lsp-managed-mode-hook
+  ;;           (lambda ()
+  ;;             (when (derived-mode-p 'python-ts-mode)
+  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
   (use-package consult-lsp)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -830,65 +798,72 @@
 ;;     ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
 ;;   :hook (prog-mode . flymake-mode))
 
-(use-package company
-  :config
-  (global-company-mode)
-  (setq company-minimum-prefix-length 2
-        company-show-quick-access t
-        company-selection-wrap-around t
-        company-tooltip-align-annotations t
-        company-dabbrev-other-buffers nil
-        company-dabbrev-downcase nil
-        company-idle-delay 0.1
-        company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev company-yasnippet)
-                           company-dabbrev)))
+;; (use-package company
+;;   :config
+;;   (global-company-mode)
+;;   (setq company-minimum-prefix-length 2
+;;         company-show-quick-access t
+;;         company-selection-wrap-around t
+;;         company-tooltip-align-annotations t
+;;         company-dabbrev-other-buffers nil
+;;         company-dabbrev-downcase nil
+;;         company-idle-delay 0.1
+;;         company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev company-yasnippet)
+;;                            company-dabbrev)))
 
-(use-package company-posframe
-  :hook company-mode)
+;; (use-package company-posframe
+;;   :hook company-mode)
 
-;; (use-package corfu
-;;   ;; Optional customizations
-;;   :custom
-;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-;;   (corfu-auto t)                 ;; Enable auto completion
-;;   (corfu-auto-prefix 1)
-;;   (corfu-separator ?\s)          ;; Orderless field separator
-;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-;;   (corfu-preview-current nil)    ;; Disable current candidate preview
-;;   (corfu-preselect-first nil)    ;; Disable candidate preselection
-;;   ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-;;   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-;;   (corfu-scroll-margin 5)        ;; Use scroll margin
+(use-package corfu
+  ;; Optional customizations
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-prefix 1)
+  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+  (corfu-preview-current t)    ;; Disable current candidate preview
+  (corfu-preselect-first nil)    ;; Disable candidate preselection
+  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+  (corfu-scroll-margin 5)        ;; Use scroll margin
 
-;;   ;; Enable Corfu only for certain modes.
-;;   ;; :hook ((prog-mode . corfu-mode)
-;;   ;;        (shell-mode . corfu-mode)
-;;   ;;        (eshell-mode . corfu-mode))
+  ;; Enable Corfu only for certain modes.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
 
-;;   ;; Recommended: Enable Corfu globally.
-;;   ;; This is recommended since Dabbrev can be used globally (M-/).
-;;   ;; See also `corfu-excluded-modes'.
-;;   :init
-;;   (global-corfu-mode))
+  ;; Recommended: Enable Corfu globally.
+  ;; This is recommended since Dabbrev can be used globally (M-/).
+  ;; See also `corfu-excluded-modes'.
+  :init
+  (global-corfu-mode))
 
-;; ;; Add extensions
-;; (use-package cape
-;;   :init
-;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
-;;   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-;;   (add-to-list 'completion-at-point-functions #'cape-file)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-history)
-;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-;;   )
+(use-package corfu-doc
+  :after corfu
+  :bind (:map corfu-map
+              ("M-d" . corfu-doc-toggle)
+              ("M-n" . corfu-doc-scroll-up)
+              ("M-p" . corfu-doc-scroll-down)))
+
+;; Add extensions
+(use-package cape
+  :init
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  ;;(add-to-list 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  )
 
 (use-package kind-icon
   :after corfu
@@ -956,16 +931,17 @@
 ;;   (smartparens-global-mode))
 
 (use-package avy
-  :after evil-leader
   :custom
   (avy-timeout-seconds 0.3)
-  :config
-  (evil-leader/set-key "f" 'avy-goto-char-timer))
+  :bind
+  ("M-j" . avy-goto-char-timer))
 
 (use-package git-gutter-fringe
+  :diminish
   :config
   (setq git-gutter:update-interval 0.1)
-  (global-git-gutter-mode))
+  (global-git-gutter-mode)
+  (diminish 'git-gutter-mode " GG"))
 
 ;; (use-package discover
 ;;   :config
@@ -992,8 +968,6 @@
   :straight t
   :commands (redacted-mode)
   :config (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
-
-(setq gc-cons-threshold (* 1 1024 1024))
 
 ;; Utility functions
 
