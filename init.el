@@ -24,6 +24,7 @@
  ring-bell-function 'ignore
  read-process-output-max (* 3 1024 1024)
  indent-tabs-mode nil
+ set-mark-command-repeat-pop t
  vc-follow-symlinks t)
 
 ;; Install straight.el
@@ -100,24 +101,22 @@
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode))
 
-;; (use-package harpoon
-;;   :straight t
-;;   :after evil-leader
-;;   :config
-;;   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/"))
-;;   (evil-leader/set-key "h H" 'harpoon-toggle-file)
-;;   (evil-leader/set-key "h r" 'harpoon-toggle-quick-menu)
-;;   (evil-leader/set-key "h c" 'harpoon-clear)
-;;   (evil-leader/set-key "h f" 'harpoon-add-file)
-;;   (evil-leader/set-key "h j" 'harpoon-go-to-1)
-;;   (evil-leader/set-key "h k" 'harpoon-go-to-2)
-;;   (evil-leader/set-key "h l" 'harpoon-go-to-3)
-;;   (evil-leader/set-key "h ;" 'harpoon-go-to-4)
-;;   (evil-leader/set-key "h h j" 'harpoon-go-to-5)
-;;   (evil-leader/set-key "h h k" 'harpoon-go-to-6)
-;;   (evil-leader/set-key "h h l" 'harpoon-go-to-7)
-;;   (evil-leader/set-key "h h ;" 'harpoon-go-to-8)
-;;   (evil-leader/set-key "h h f" 'harpoon-go-to-9))
+(use-package harpoon
+  :straight t
+  :init
+  (define-prefix-command 'harpoon-map)
+  (global-set-key (kbd "C-'") 'harpoon-map)
+  :bind (:map harpoon-map
+              ("h" . harpoon-toggle-file)
+              ("'" . harpoon-add-file)
+              ("c" . harpoon-clear)
+              ("r" . harpoon-toggle-quick-menu)
+              ("1" . harpoon-go-to-1)
+              ("2" . harpoon-go-to-2)
+              ("3" . harpoon-go-to-3)
+              ("4" . harpoon-go-to-4))
+  :config
+  (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 
 (use-package paren
   :straight (:type built-in)
@@ -228,16 +227,13 @@
   :custom
   (dired-kill-when-opening-new-dired-buffer t)
   :config
-  (add-hook 'dired-mode-hook
-            (lambda ()
-              (dired-hide-details-mode))))
+  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
 
 ;; Github like git info in dired
 (use-package dired-git-info
-  :straight t
-  :defer t
-  :config
-  (add-hook 'dired-hook 'dired-git-info-auto-enable))
+  :init
+  (add-hook 'dired-after-readin-hook 'dired-git-info-auto-enable))
+
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer-quick)
