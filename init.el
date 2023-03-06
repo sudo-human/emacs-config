@@ -118,6 +118,20 @@
   :config
   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 
+(use-package project
+  :bind (:map project-prefix-map
+              ("t" . project-todo))
+  :config
+  (defun project-todo ()
+  "Edit the TODO.org file at the root of the current project."
+  (interactive)
+  (let* ((base (ignore-errors (project-root (project-current))))
+         (todo (file-name-concat base "TODO.org")))
+    (cond ((and base (file-exists-p todo)) (find-file todo))
+          ((not base) (error "Not in a project"))
+          (t (error "Project does not contain a TODO.org file.")))))
+  (add-to-list 'project-switch-commands '(project-todo "Todo" "t")))
+
 (use-package paren
   :straight (:type built-in)
   :custom
@@ -578,7 +592,7 @@
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -678,100 +692,100 @@
   :custom
   (consult-git-log-grep-open-function #'magit-show-commit))
 
-(use-package consult-flycheck)
+;; (use-package consult-flycheck)
 ;; (use-package consult-projectile)
 
-;; (use-package eglot
-;;   :bind (("C-c l e" . eglot)
-;;          :map eglot-mode-map
-;;          ("C-c l r" . eglot-rename)
-;;          ("C-c l a" . eglot-code-actions)
-;;          ("C-c l f" . eglot-format))
-;;   :custom
-;;   (eglot-autoshutdown t)
-;;   :init
-;;   (which-key-add-key-based-replacements "C-c l" "eglot")
-;;   :config
-;;   (setcdr (assq 'java-mode eglot-server-programs)
-;;           `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-;;          "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-;;      "-Dosgi.bundles.defaultStartLevel=4"
-;;      "-Declipse.product=org.eclipse.jdt.ls.core.product"
-;;      "-Dlog.level=ALL"
-;;      "-noverify"
-;;      "-Xmx1G"
-;;      "--add-modules=ALL-SYSTEM"
-;;      "--add-opens java.base/java.util=ALL-UNNAMED"
-;;      "--add-opens java.base/java.lang=ALL-UNNAMED"
-;;      "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-;;      "-configuration ./config_linux")))
-
-;; (use-package consult-eglot
-;;   :after (eglot consult))
-
-(use-package flycheck)
-
-(use-package lsp-mode
+(use-package eglot
+  :bind (("C-c l e" . eglot)
+         :map eglot-mode-map
+         ("C-c l r" . eglot-rename)
+         ("C-c l a" . eglot-code-actions)
+         ("C-c l f" . eglot-format))
   :custom
-  (lsp-completion-provider :none) ;; we use Corfu!
-  (lsp-file-watch-threshold 100000)
-  (lsp-keymap-prefix "C-c l")
+  (eglot-autoshutdown t)
   :init
-  (setq lsp-idle-delay 0
-        lsp-signature-doc-lines 2)
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion)
-  :commands (lsp lsp-deferred)
+  (which-key-add-key-based-replacements "C-c l" "eglot")
   :config
-  (dolist (mode '(c-mode-hook
-                  c++-mode-hook
-                  js2-mode
-                  rjsx-mode
-                  js-mode))
-    (add-hook mode 'lsp-deferred))
-  ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  ;; (defvar-local my-flycheck-local-cache nil)
-  ;; (defun my-flycheck-local-checker-get (fn checker property)
-  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
-  ;;   ;; infinite loops.
-  ;;   (if (eq checker 'lsp)
-  ;;       (or (alist-get property my-flycheck-local-cache)
-  ;;           (funcall fn checker property))
-  ;;     (funcall fn checker property)))
-  ;; (advice-add 'flycheck-checker-get
-  ;;             :around 'my-flycheck-local-checker-get)
+  (setcdr (assq 'java-mode eglot-server-programs)
+          `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
+         "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+     "-Dosgi.bundles.defaultStartLevel=4"
+     "-Declipse.product=org.eclipse.jdt.ls.core.product"
+     "-Dlog.level=ALL"
+     "-noverify"
+     "-Xmx1G"
+     "--add-modules=ALL-SYSTEM"
+     "--add-opens java.base/java.util=ALL-UNNAMED"
+     "--add-opens java.base/java.lang=ALL-UNNAMED"
+     "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+     "-configuration ./config_linux")))
 
-  ;; (add-hook 'lsp-managed-mode-hook
-  ;;           (lambda ()
-  ;;             (when (derived-mode-p 'python-ts-mode)
-  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+(use-package consult-eglot
+  :after (eglot consult))
 
-  (use-package consult-lsp)
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+;; (use-package flycheck)
 
-(use-package dap-mode)
+;; (use-package lsp-mode
+;;   :custom
+;;   (lsp-completion-provider :none) ;; we use Corfu!
+;;   (lsp-file-watch-threshold 100000)
+;;   (lsp-keymap-prefix "C-c l")
+;;   :init
+;;   (setq lsp-idle-delay 0
+;;         lsp-signature-doc-lines 2)
+;;   (defun my/lsp-mode-setup-completion ()
+;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;           '(orderless))) ;; Configure orderless
+;;   :hook
+;;   (lsp-completion-mode . my/lsp-mode-setup-completion)
+;;   :commands (lsp lsp-deferred)
+;;   :config
+;;   (dolist (mode '(c-mode-hook
+;;                   c++-mode-hook
+;;                   js2-mode
+;;                   rjsx-mode
+;;                   js-mode))
+;;     (add-hook mode 'lsp-deferred))
+;;   ;; Add buffer local Flycheck checkers after LSP for different major modes.
+;;   ;; (defvar-local my-flycheck-local-cache nil)
+;;   ;; (defun my-flycheck-local-checker-get (fn checker property)
+;;   ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+;;   ;;   ;; infinite loops.
+;;   ;;   (if (eq checker 'lsp)
+;;   ;;       (or (alist-get property my-flycheck-local-cache)
+;;   ;;           (funcall fn checker property))
+;;   ;;     (funcall fn checker property)))
+;;   ;; (advice-add 'flycheck-checker-get
+;;   ;;             :around 'my-flycheck-local-checker-get)
 
-(use-package lsp-ui
-  :after lsp-mode
-  :custom
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-peek-enable nil)
-  (lsp-headerline-breadcrumb-enable nil))
+;;   ;; (add-hook 'lsp-managed-mode-hook
+;;   ;;           (lambda ()
+;;   ;;             (when (derived-mode-p 'python-ts-mode)
+;;   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
-(use-package lsp-java
-  :hook (java-mode . lsp-deferred))
+;;   (use-package consult-lsp)
+;;   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
-(use-package lsp-pyright
-  :init
-  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-  (setq lsp-pyright-multi-root nil
-        lsp-pyright-typechecking-mode "off")
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp-deferred))))  ; or lsp
+;; (use-package dap-mode)
+
+;; (use-package lsp-ui
+;;   :after lsp-mode
+;;   :custom
+;;   (lsp-ui-doc-enable nil)
+;;   (lsp-ui-peek-enable nil)
+;;   (lsp-headerline-breadcrumb-enable nil))
+
+;; (use-package lsp-java
+;;   :hook (java-mode . lsp-deferred))
+
+;; (use-package lsp-pyright
+;;   :init
+;;   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+;;   (setq lsp-pyright-multi-root nil
+;;         lsp-pyright-typechecking-mode "off")
+;;   :hook (python-ts-mode . (lambda ()
+;;                             (require 'lsp-pyright)
+;;                             (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook python-ts-mode)
