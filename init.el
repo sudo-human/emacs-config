@@ -92,7 +92,7 @@
       '(""
         (:eval
          (let ((project-name (nth 2 (project-current))))
-           (unless (string= "-" project-name)
+           (unless (not project-name)
              (format "[%s] " project-name))))
         "%b"))
 
