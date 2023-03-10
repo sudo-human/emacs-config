@@ -467,6 +467,8 @@
 
 (use-package zenburn-theme)
 
+(use-package color-theme-sanityinc-tomorrow)
+
 (use-package afternoon-theme)
 
 (use-package dracula-theme)
@@ -538,7 +540,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-moonlight t))
+  (load-theme 'doom-one t))
 
 (use-package helpful
   :bind
