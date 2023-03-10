@@ -12,11 +12,11 @@
 (setq warning-minimum-level :emergency)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "M PLUS 1 Code-13"))
+(add-to-list 'default-frame-alist '(font . "Input Mono-12"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "M PLUS 1 Code-13")
-(set-face-attribute 'fixed-pitch nil :font "M PLUS 2-13")
-(set-face-attribute 'variable-pitch nil :font "M PLUS 2-13")
+(set-face-attribute 'default nil :font "Input Mono-12")
+(set-face-attribute 'fixed-pitch nil :font "Input Sans-12")
+(set-face-attribute 'variable-pitch nil :font "Input Sans-12")
 
 (setq-default
  inhibit-startup-message t
@@ -87,6 +87,14 @@
   (add-hook mode (lambda ()
                    (display-line-numbers-mode 0)
                    (global-hl-line-mode 0))))
+
+(setq frame-title-format
+      '(""
+        (:eval
+         (let ((project-name (nth 2 (project-current))))
+           (unless (string= "-" project-name)
+             (format "[%s] " project-name))))
+        "%b"))
 
 (add-hook
  'after-make-frame-functions
@@ -303,19 +311,10 @@
   (define-key vertico-map (kbd "M-n") 'vertico-next-group)
   (define-key vertico-map (kbd "M-p") 'vertico-previous-group)
 
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
   ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+  ;; (setq minibuffer-prompt-properties
+  ;;       '(read-only t cursor-intangible t face minibuffer-prompt))
+  ;; (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   (vertico-mode)
   (vertico-multiform-mode)
@@ -495,6 +494,15 @@
       :demand t
       :config
       (setq treesit-auto-install 'prompt)
+      (setq my-js-tsauto-config
+	(make-treesit-auto-recipe
+	 :lang 'javascript
+	 :ts-mode 'js-ts-mode
+	 :remap '(js2-mode js-mode javascript-mode)
+	 :url "https://github.com/tree-sitter/tree-sitter-javascript"
+	 :revision "master"
+	 :source-dir "src"))
+      (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
       (global-treesit-auto-mode)))
 
 (use-package emacs
@@ -520,10 +528,6 @@
           (cdr args)))
   (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
 
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
   ;; Vertico commands are hidden in normal buffers.
@@ -592,7 +596,7 @@
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -695,103 +699,101 @@
 ;; (use-package consult-flycheck)
 ;; (use-package consult-projectile)
 
-(use-package eglot
-  :bind (("C-c l e" . eglot)
-         :map eglot-mode-map
-         ("C-c l r" . eglot-rename)
-         ("C-c l a" . eglot-code-actions)
-         ("C-c l f" . eglot-format))
-  :custom
-  (eglot-autoshutdown t)
-  :init
-  (which-key-add-key-based-replacements "C-c l" "eglot")
-  :config
-  (setcdr (assq 'java-mode eglot-server-programs)
-          `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-         "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-     "-Dosgi.bundles.defaultStartLevel=4"
-     "-Declipse.product=org.eclipse.jdt.ls.core.product"
-     "-Dlog.level=ALL"
-     "-noverify"
-     "-Xmx1G"
-     "--add-modules=ALL-SYSTEM"
-     "--add-opens java.base/java.util=ALL-UNNAMED"
-     "--add-opens java.base/java.lang=ALL-UNNAMED"
-     "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-     "-configuration ./config_linux")))
-
-(use-package consult-eglot
-  :after (eglot consult))
-
-;; (use-package flycheck)
-
-;; (use-package lsp-mode
+;; (use-package eglot
+;;   :bind (("C-c l e" . eglot)
+;;          :map eglot-mode-map
+;;          ("C-c l r" . eglot-rename)
+;;          ("C-c l a" . eglot-code-actions)
+;;          ("C-c l f" . eglot-format))
 ;;   :custom
-;;   (lsp-completion-provider :none) ;; we use Corfu!
-;;   (lsp-file-watch-threshold 100000)
-;;   (lsp-keymap-prefix "C-c l")
+;;   (eglot-autoshutdown t)
 ;;   :init
-;;   (setq lsp-idle-delay 0
-;;         lsp-signature-doc-lines 2)
-;;   (defun my/lsp-mode-setup-completion ()
-;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-;;           '(orderless))) ;; Configure orderless
-;;   :hook
-;;   (lsp-completion-mode . my/lsp-mode-setup-completion)
-;;   :commands (lsp lsp-deferred)
+;;   (which-key-add-key-based-replacements "C-c l" "eglot")
 ;;   :config
-;;   (dolist (mode '(c-mode-hook
-;;                   c++-mode-hook
-;;                   js2-mode
-;;                   rjsx-mode
-;;                   js-mode))
-;;     (add-hook mode 'lsp-deferred))
-;;   ;; Add buffer local Flycheck checkers after LSP for different major modes.
-;;   ;; (defvar-local my-flycheck-local-cache nil)
-;;   ;; (defun my-flycheck-local-checker-get (fn checker property)
-;;   ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
-;;   ;;   ;; infinite loops.
-;;   ;;   (if (eq checker 'lsp)
-;;   ;;       (or (alist-get property my-flycheck-local-cache)
-;;   ;;           (funcall fn checker property))
-;;   ;;     (funcall fn checker property)))
-;;   ;; (advice-add 'flycheck-checker-get
-;;   ;;             :around 'my-flycheck-local-checker-get)
+;;   (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio")))
+;;   (setcdr (assq 'java-mode eglot-server-programs)
+;;           `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
+;;          "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+;;      "-Dosgi.bundles.defaultStartLevel=4"
+;;      "-Declipse.product=org.eclipse.jdt.ls.core.product"
+;;      "-Dlog.level=ALL"
+;;      "-noverify"
+;;      "-Xmx1G"
+;;      "--add-modules=ALL-SYSTEM"
+;;      "--add-opens java.base/java.util=ALL-UNNAMED"
+;;      "--add-opens java.base/java.lang=ALL-UNNAMED"
+;;      "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+;;      "-configuration ./config_linux"))
+;;   (setq-default eglot-workspace-configuration '(:typeCheckingMode "off")))
 
-;;   ;; (add-hook 'lsp-managed-mode-hook
-;;   ;;           (lambda ()
-;;   ;;             (when (derived-mode-p 'python-ts-mode)
-;;   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+;; (use-package consult-eglot
+;;   :after (eglot consult))
 
-;;   (use-package consult-lsp)
-;;   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+(use-package flycheck)
 
-;; (use-package dap-mode)
+(use-package lsp-mode
+  :custom
+  (lsp-completion-provider :none) ;; we use Corfu!
+  (lsp-file-watch-threshold 100000)
+  (lsp-keymap-prefix "C-c l")
+  :init
+  (setq lsp-idle-delay 0
+        lsp-signature-doc-lines 2)
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))) ;; Configure orderless
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion)
+  :commands (lsp lsp-deferred)
+  :config
+  (dolist (mode '(c-ts-mode-hook
+                  js-ts-mode-hook
+                  typescript-ts-mode-hook
+                  c++-ts-mode-hook))
+    (add-hook mode 'lsp-deferred))
+  ;; Add buffer local Flycheck checkers after LSP for different major modes.
+  ;; (defvar-local my-flycheck-local-cache nil)
+  ;; (defun my-flycheck-local-checker-get (fn checker property)
+  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+  ;;   ;; infinite loops.
+  ;;   (if (eq checker 'lsp)
+  ;;       (or (alist-get property my-flycheck-local-cache)
+  ;;           (funcall fn checker property))
+  ;;     (funcall fn checker property)))
+  ;; (advice-add 'flycheck-checker-get
+  ;;             :around 'my-flycheck-local-checker-get)
 
-;; (use-package lsp-ui
-;;   :after lsp-mode
-;;   :custom
-;;   (lsp-ui-doc-enable nil)
-;;   (lsp-ui-peek-enable nil)
-;;   (lsp-headerline-breadcrumb-enable nil))
+  ;; (add-hook 'lsp-managed-mode-hook
+  ;;           (lambda ()
+  ;;             (when (derived-mode-p 'python-ts-mode)
+  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
-;; (use-package lsp-java
-;;   :hook (java-mode . lsp-deferred))
+  (use-package consult-lsp)
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
-;; (use-package lsp-pyright
-;;   :init
-;;   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-;;   (setq lsp-pyright-multi-root nil
-;;         lsp-pyright-typechecking-mode "off")
-;;   :hook (python-ts-mode . (lambda ()
-;;                             (require 'lsp-pyright)
-;;                             (lsp-deferred))))  ; or lsp
+(use-package dap-mode)
+
+(use-package lsp-ui
+  :after lsp-mode
+  :custom
+  (lsp-ui-doc-enable nil)
+  (lsp-ui-peek-enable nil)
+  (lsp-headerline-breadcrumb-enable nil))
+
+(use-package lsp-java
+  :hook (java-mode . lsp-deferred))
+
+(use-package lsp-pyright
+  :init
+  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+  (setq lsp-pyright-multi-root nil
+        lsp-pyright-typechecking-mode "off")
+  :hook (python-ts-mode . (lambda ()
+                            (require 'lsp-pyright)
+                            (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook python-ts-mode)
-
-(use-package rjsx-mode
-  :mode "\\.[mc]?js")
 
 (use-package yaml-mode)
 
@@ -807,6 +809,11 @@
 ;;     ("p" flymake-goto-prev-error "prev-error")
 ;;     ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
 ;;   :hook (prog-mode . flymake-mode))
+
+;; (use-package flymake-diagnostic-at-point
+;;   :hook flymake-mode
+;;   :custom
+;;   (flymake-diagnostic-at-point-timer-delay 0.8))
 
 ;; (use-package company
 ;;   :config
