@@ -253,9 +253,8 @@
 
 ;; Github like git info in dired
 (use-package dired-git-info
-  :init
-  (add-hook 'dired-after-readin-hook 'dired-git-info-auto-enable))
-
+  :bind (:map dired-mode-map
+              (")" . dired-git-info-mode)))
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer-quick)
@@ -323,7 +322,6 @@
           (consult-xref buffer indexed)
           (consult-imenu buffer)
           (consult-buffer)
-          (project-find-file reverse)
           (xref-find-references buffer)))
   (setq vertico-multiform-categories
         '((file grid)
@@ -355,7 +353,7 @@
                                orderless-literal
                                orderless-prefixes
                                orderless-initialism
-                               ;; orderless-flex
+                               orderless-flex
                                )))
 
 ;; (use-package orderless
@@ -827,13 +825,16 @@
 ;;         company-dabbrev-other-buffers nil
 ;;         company-dabbrev-downcase nil
 ;;         company-idle-delay 0.1
-;;         company-backends '((comapny-files company-capf company-dabbrev-code company-dabbrev company-yasnippet)
+;;         company-backends '((company-capf comapny-files company-yasnippet company-dabbrev-code company-dabbrev)
 ;;                            company-dabbrev)))
 
 ;; (use-package company-posframe
 ;;   :hook company-mode)
 
 (use-package corfu
+  :straight (corfu :files (:defaults "extensions/*"))
+  :bind (:map corfu-map
+              ("M-j" . corfu-quick-complete))
   ;; Optional customizations
   :custom
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -857,7 +858,8 @@
   ;; This is recommended since Dabbrev can be used globally (M-/).
   ;; See also `corfu-excluded-modes'.
   :init
-  (global-corfu-mode))
+  (global-corfu-mode)
+  (corfu-history-mode))
 
 (use-package corfu-doc
   :after corfu
@@ -872,7 +874,7 @@
   ;; Add `completion-at-point-functions', used by `completion-at-point'.
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file)
-  ;;(add-to-list 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'cape-history)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
