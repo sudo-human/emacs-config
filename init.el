@@ -1,7 +1,3 @@
-;; Set window size to a sensable default
-(add-to-list 'default-frame-alist '(height . 36))
-(add-to-list 'default-frame-alist '(width . 124))
-
 ;; Very important!!! In some systems the encoding can fuck up.
 (setq locale-coding-system 'utf-8)
 (set-terminal-coding-system 'utf-8-unix)
@@ -12,20 +8,33 @@
 (setq warning-minimum-level :emergency)
 
 ;; Set Default font for all frames
-(add-to-list 'default-frame-alist '(font . "Input Mono-12"))
+(add-to-list 'default-frame-alist '(font . "Fira Code-12"))
 ;; Beware of height
-(set-face-attribute 'default nil :font "Input Mono-12")
-(set-face-attribute 'fixed-pitch nil :font "Input Sans-12")
-(set-face-attribute 'variable-pitch nil :font "Input Sans-12")
+(set-face-attribute 'default nil :font "Fira Code-12")
+(set-face-attribute 'fixed-pitch nil :font "Roboto-12")
+(set-face-attribute 'variable-pitch nil :font "Roboto-12")
 
 (setq-default
  inhibit-startup-message t
  visual-bell t
- ring-bell-function 'ignore
  read-process-output-max (* 3 1024 1024)
  indent-tabs-mode nil
  set-mark-command-repeat-pop t
  vc-follow-symlinks t)
+
+(setq display-line-numbers-type 'relative
+      display-line-numbers-width-start t
+      load-prefer-newer t
+      max-lisp-eval-depth 10000
+      max-specpdl-size 10000
+      scroll-margin 8
+      auto-revert-check-vc-info t
+      scroll-step 1
+      scroll-conservatively 1000
+      scroll-preserve-screen-position 1
+      save-interprogram-paste-before-kill t
+      isearch-lazy-count t
+      find-program "fdfind")
 
 ;; Install straight.el
 (setq straight-repository-branch "develop")
@@ -59,20 +68,10 @@
 (electric-pair-mode 1)
 (context-menu-mode t)
 (blink-cursor-mode -1)
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
+;; (tool-bar-mode -1)
+;; (menu-bar-mode -1)
+;; (scroll-bar-mode -1)
 (defalias 'yes-or-no-p 'y-or-n-p)
-(setq display-line-numbers-type 'relative
-      display-line-numbers-width-start t
-      scroll-margin 8
-      auto-revert-check-vc-info t
-      scroll-step 1
-      scroll-conservatively 1000
-      scroll-preserve-screen-position 1
-      save-interprogram-paste-before-kill t
-      isearch-lazy-count t
-      find-program "fdfind")
 (save-place-mode t)
 (recentf-mode t)
 (global-display-line-numbers-mode)
@@ -105,9 +104,17 @@
        (define-key input-decode-map (kbd "C-[") [C-lsb])
        (define-key input-decode-map (kbd "C-m") [C-m])))))
 
-;; (use-package doom-modeline
-;;   :ensure t
-;;   :hook (after-init . doom-modeline-mode))
+(use-package org
+  :mode ("\\.org$" . org-mode)
+  :config
+  (setq org-hide-emphasis-markers t)
+  (add-hook 'org-mode-hook 'org-indent-mode))
+
+(use-package doom-modeline
+  :ensure t
+  :custom
+  (doom-modeline-vcs-max-length 30)
+  :hook (after-init . doom-modeline-mode))
 
 (use-package harpoon
   :straight t
@@ -342,19 +349,29 @@
   :after vertico
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
+
 ;; Orderless
 (use-package orderless
   :custom
   (orderless-component-separator 'orderless-escapable-split-on-space)
-  (completion-category-defaults nil)
+  ;; (completion-category-defaults nil)
   (completion-styles '(orderless basic))
   (orderless-matching-styles '(
-                               orderless-regexp
                                orderless-literal
                                orderless-prefixes
                                orderless-initialism
+                               orderless-regexp
                                orderless-flex
-                               )))
+                               ))
+  :config
+  (orderless-define-completion-style orderless+basic
+    (orderless-matching-styles '(orderless-literal
+                                 orderless-regexp)))
+  (setq completion-category-overrides
+        '((command (styles orderless+basic))
+          (symbol (styles orderless+basic))
+          (variable (styles orderless+basic))
+          (file (styles basic partial-completion)))))
 
 ;; (use-package orderless
 ;;   :custom
@@ -514,8 +531,7 @@
         modus-themes-region '(bg-only no-extend)
         modus-themes-mode-line '(accented borderless)
         ;; modus-themes-hl-line '(accented)
-        modus-themes-parens-match '(bold intense)
-        tab-always-indent 'complete)
+        modus-themes-parens-match '(bold intense))
 
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -596,7 +612,7 @@
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -689,6 +705,14 @@
   ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
   )
 
+(use-package consult-dir
+  :straight t
+  :bind (("C-x C-d" . consult-dir)
+         :map vertico-map
+         ("C-x C-d" . consult-dir)
+         ("C-x C-j" . consult-dir-jump-file))
+  :after consult)
+
 (use-package consult-git-log-grep
   :straight t
   :after consult
@@ -699,98 +723,97 @@
 ;; (use-package consult-flycheck)
 ;; (use-package consult-projectile)
 
-;; (use-package eglot
-;;   :bind (("C-c l e" . eglot)
-;;          :map eglot-mode-map
-;;          ("C-c l r" . eglot-rename)
-;;          ("C-c l a" . eglot-code-actions)
-;;          ("C-c l f" . eglot-format))
-;;   :custom
-;;   (eglot-autoshutdown t)
-;;   :init
-;;   (which-key-add-key-based-replacements "C-c l" "eglot")
-;;   :config
-;;   (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio")))
-;;   (setcdr (assq 'java-mode eglot-server-programs)
-;;           `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-;;          "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-;;      "-Dosgi.bundles.defaultStartLevel=4"
-;;      "-Declipse.product=org.eclipse.jdt.ls.core.product"
-;;      "-Dlog.level=ALL"
-;;      "-noverify"
-;;      "-Xmx1G"
-;;      "--add-modules=ALL-SYSTEM"
-;;      "--add-opens java.base/java.util=ALL-UNNAMED"
-;;      "--add-opens java.base/java.lang=ALL-UNNAMED"
-;;      "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-;;      "-configuration ./config_linux"))
-;;   (setq-default eglot-workspace-configuration '(:typeCheckingMode "off")))
-
-;; (use-package consult-eglot
-;;   :after (eglot consult))
-
-(use-package flycheck)
-
-(use-package lsp-mode
+(use-package eglot
+  :straight nil
+  :bind (("C-c l e" . eglot)
+         :map eglot-mode-map
+         ("C-c l r" . eglot-rename)
+         ("C-c l a" . eglot-code-actions)
+         ("C-c l f" . eglot-format))
   :custom
-  (lsp-completion-provider :none) ;; we use Corfu!
-  (lsp-file-watch-threshold 100000)
-  (lsp-keymap-prefix "C-c l")
+  (eglot-autoshutdown t)
   :init
-  (setq lsp-idle-delay 0
-        lsp-signature-doc-lines 2)
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion)
-  :commands (lsp lsp-deferred)
+  (which-key-add-key-based-replacements "C-c l" "eglot")
   :config
-  (dolist (mode '(c-ts-mode-hook
-                  js-ts-mode-hook
-                  typescript-ts-mode-hook
-                  c++-ts-mode-hook))
-    (add-hook mode 'lsp-deferred))
-  ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  ;; (defvar-local my-flycheck-local-cache nil)
-  ;; (defun my-flycheck-local-checker-get (fn checker property)
-  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
-  ;;   ;; infinite loops.
-  ;;   (if (eq checker 'lsp)
-  ;;       (or (alist-get property my-flycheck-local-cache)
-  ;;           (funcall fn checker property))
-  ;;     (funcall fn checker property)))
-  ;; (advice-add 'flycheck-checker-get
-  ;;             :around 'my-flycheck-local-checker-get)
+  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio"))))
+  ;; (setcdr (assq 'java-mode eglot-server-programs)
+  ;;         `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
+  ;;        "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+  ;;    "-Dosgi.bundles.defaultStartLevel=4"
+  ;;    "-Declipse.product=org.eclipse.jdt.ls.core.product"
+  ;;    "-Dlog.level=ALL"
+  ;;    "-noverify"
+  ;;    "-Xmx1G"
+  ;;    "--add-modules=ALL-SYSTEM"
+  ;;    "--add-opens java.base/java.util=ALL-UNNAMED"
+  ;;    "--add-opens java.base/java.lang=ALL-UNNAMED"
+  ;;    "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+  ;;    "-configuration ./config_linux")))
 
-  ;; (add-hook 'lsp-managed-mode-hook
-  ;;           (lambda ()
-  ;;             (when (derived-mode-p 'python-ts-mode)
-  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+(use-package consult-eglot
+  :after (eglot consult))
 
-  (use-package consult-lsp)
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+;; (use-package flycheck)
 
-(use-package dap-mode)
+;; (use-package lsp-mode
+;;   :custom
+;;   (lsp-file-watch-threshold 100000)
+;;   (lsp-keymap-prefix "C-c l")
+;;   :init
+;;   (setq lsp-idle-delay 0
+;;         lsp-signature-doc-lines 2)
+;;   ;; (defun my/lsp-mode-setup-completion ()
+;;   ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;   ;;         '(orderless))) ;; Configure orderless
+;;   ;; :hook
+;;   ;; (lsp-completion-mode . my/lsp-mode-setup-completion)
+;;   :commands (lsp lsp-deferred)
+;;   :config
+;;   (dolist (mode '(c-ts-mode-hook
+;;                   js-ts-mode-hook
+;;                   typescript-ts-mode-hook
+;;                   c++-ts-mode-hook))
+;;     (add-hook mode 'lsp-deferred))
+;;   ;; Add buffer local Flycheck checkers after LSP for different major modes.
+;;   ;; (defvar-local my-flycheck-local-cache nil)
+;;   ;; (defun my-flycheck-local-checker-get (fn checker property)
+;;   ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+;;   ;;   ;; infinite loops.
+;;   ;;   (if (eq checker 'lsp)
+;;   ;;       (or (alist-get property my-flycheck-local-cache)
+;;   ;;           (funcall fn checker property))
+;;   ;;     (funcall fn checker property)))
+;;   ;; (advice-add 'flycheck-checker-get
+;;   ;;             :around 'my-flycheck-local-checker-get)
 
-(use-package lsp-ui
-  :after lsp-mode
-  :custom
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-peek-enable nil)
-  (lsp-headerline-breadcrumb-enable nil))
+;;   ;; (add-hook 'lsp-managed-mode-hook
+;;   ;;           (lambda ()
+;;   ;;             (when (derived-mode-p 'python-ts-mode)
+;;   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
-(use-package lsp-java
-  :hook (java-mode . lsp-deferred))
+;;   (use-package consult-lsp)
+;;   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
-(use-package lsp-pyright
-  :init
-  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-  (setq lsp-pyright-multi-root nil
-        lsp-pyright-typechecking-mode "off")
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp-deferred))))  ; or lsp
+;; (use-package dap-mode)
+
+;; (use-package lsp-ui
+;;   :after lsp-mode
+;;   :custom
+;;   (lsp-ui-doc-enable nil)
+;;   (lsp-ui-peek-enable nil)
+;;   (lsp-headerline-breadcrumb-enable nil))
+
+;; (use-package lsp-java
+;;   :hook (java-mode . lsp-deferred))
+
+;; (use-package lsp-pyright
+;;   :init
+;;   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+;;   (setq lsp-pyright-multi-root nil
+;;         lsp-pyright-typechecking-mode "off")
+;;   :hook (python-ts-mode . (lambda ()
+;;                             (require 'lsp-pyright)
+;;                             (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook python-ts-mode)
@@ -799,99 +822,107 @@
 
 (use-package fish-mode)
 
-(use-package lsp-treemacs)
+;; (use-package lsp-treemacs)
 
-;; (use-package flymake
-;;   :config
-;;   (defhydra flymake-map (flymake-mode-map "C-c f")
-;;     "flymake"
-;;     ("n" flymake-goto-next-error "next-error")
-;;     ("p" flymake-goto-prev-error "prev-error")
-;;     ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
-;;   :hook (prog-mode . flymake-mode))
+(use-package flymake
+  :straight nil
+  :config
+  (defhydra flymake-map (flymake-mode-map "C-c f")
+    "flymake"
+    ("n" flymake-goto-next-error "next-error")
+    ("p" flymake-goto-prev-error "prev-error")
+    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
+  :hook (prog-mode . flymake-mode))
 
-;; (use-package flymake-diagnostic-at-point
-;;   :hook flymake-mode
-;;   :custom
-;;   (flymake-diagnostic-at-point-timer-delay 0.8))
+(use-package flymake-diagnostic-at-point
+  :hook flymake-mode
+  :custom
+  (flymake-diagnostic-at-point-timer-delay 0.8))
 
-;; (use-package company
-;;   :config
-;;   (global-company-mode)
-;;   (setq company-minimum-prefix-length 2
-;;         company-show-quick-access t
-;;         company-selection-wrap-around t
-;;         company-tooltip-align-annotations t
-;;         company-dabbrev-other-buffers nil
-;;         company-dabbrev-downcase nil
-;;         company-idle-delay 0.1
-;;         company-backends '((company-capf comapny-files company-yasnippet company-dabbrev-code company-dabbrev)
-;;                            company-dabbrev)))
+(use-package company
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-show-quick-access t)
+  (company-selection-wrap-around t)
+  (company-tooltip-align-annotations t)
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-downcase nil)
+  (company-idle-delay 0.0)
+  (company-backends '((company-capf company-dabbrev-code company-yasnippet company-files)))
+  (company-text-icons-add-background t)
+  (company-format-margin-function #'company-text-icons-margin)
+  (company-frontends '(company-pseudo-tooltip-frontend))
+  (company-tooltip-minimum 8)
+  (company-tooltip-flip-when-above t)
+  :config
+  (global-company-mode))
 
 ;; (use-package company-posframe
 ;;   :hook company-mode)
 
-(use-package corfu
-  :straight (corfu :files (:defaults "extensions/*"))
-  :bind (:map corfu-map
-              ("M-j" . corfu-quick-complete))
-  ;; Optional customizations
-  :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-auto-prefix 1)
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-  (corfu-preview-current t)    ;; Disable current candidate preview
-  (corfu-preselect-first nil)    ;; Disable candidate preselection
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-  (corfu-scroll-margin 5)        ;; Use scroll margin
+;; (use-package corfu
+;;   :straight (corfu :files (:defaults "extensions/*"))
+;;   :bind (:map corfu-map
+;;               ("M-j" . corfu-quick-complete))
+;;   ;; Optional customizations
+;;   :custom
+;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+;;   (corfu-auto t)                 ;; Enable auto completion
+;;   (corfu-auto-prefix 1)
+;;   (corfu-auto-delay 0.1)
+;;   (corfu-separator ?\s)          ;; Orderless field separator
+;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+;;   (corfu-preview-current t)    ;; Disable current candidate preview
+;;   (corfu-preselect-first nil)    ;; Disable candidate preselection
+;;   ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+;;   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+;;   (corfu-scroll-margin 5)        ;; Use scroll margin
 
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
+;;   ;; Enable Corfu only for certain modes.
+;;   ;; :hook ((prog-mode . corfu-mode)
+;;   ;;        (shell-mode . corfu-mode)
+;;   ;;        (eshell-mode . corfu-mode))
 
-  ;; Recommended: Enable Corfu globally.
-  ;; This is recommended since Dabbrev can be used globally (M-/).
-  ;; See also `corfu-excluded-modes'.
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode))
+;;   ;; Recommended: Enable Corfu globally.
+;;   ;; This is recommended since Dabbrev can be used globally (M-/).
+;;   ;; See also `corfu-excluded-modes'.
+;;   :init
+;;   (global-corfu-mode)
+;;   (corfu-history-mode))
 
-(use-package corfu-doc
-  :after corfu
-  :bind (:map corfu-map
-              ("M-d" . corfu-doc-toggle)
-              ("M-n" . corfu-doc-scroll-up)
-              ("M-p" . corfu-doc-scroll-down)))
+;; (use-package corfu-doc
+;;   :after corfu
+;;   :bind (:map corfu-map
+;;               ("M-d" . corfu-doc-toggle)
+;;               ("M-n" . corfu-doc-scroll-up)
+;;               ("M-p" . corfu-doc-scroll-down)))
 
-;; Add extensions
-(use-package cape
-  :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
+;; ;; Add extensions
+;; (use-package cape
+;;   :hook corfu
+;;   :init
+;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
+;;   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+;;   (add-to-list 'completion-at-point-functions #'cape-file)
+;;   (add-to-list 'completion-at-point-functions #'cape-history)
+;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+;;   (add-to-list 'completion-at-point-functions #'cape-abbrev)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
+;;   )
 
-(use-package kind-icon
-  :after corfu
-  :custom
-  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+;; (use-package kind-icon
+;;   :after corfu
+;;   :custom
+;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+;;   :config
+;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package vterm
   :config
@@ -953,7 +984,7 @@
 
 (use-package avy
   :custom
-  (avy-timeout-seconds 0.3)
+  (avy-timeout-seconds 0.2)
   :bind
   ("M-j" . avy-goto-char-timer))
 
@@ -967,9 +998,6 @@
 ;; (use-package discover
 ;;   :config
 ;;   (global-discover-mode 1))
-
-(use-package org
-  :mode ("\\.org$" . org-mode))
 
 ;; Restclient
 (use-package restclient
@@ -989,6 +1017,39 @@
   :straight t
   :commands (redacted-mode)
   :config (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
+
+(use-package lemon
+  :disabled t
+  :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
+  :config (lemon-mode 1))
+
+(use-package copilot
+  :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+  :ensure t
+  :hook (prog-mode . copilot-mode)
+  :config
+  (with-eval-after-load 'company
+    ;; disable inline previews
+    (delq 'company-preview-if-just-one-frontend company-frontends))
+  
+  (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+  (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
+
+  (defun rk/copilot-quit ()
+    "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
+cleared, make sure the overlay doesn't come back too soon."
+    (interactive)
+    (condition-case err
+        (when copilot--overlay
+          (lexical-let ((pre-copilot-disable-predicates copilot-disable-predicates))
+                       (setq copilot-disable-predicates (list (lambda () t)))
+                       (copilot-clear-overlay)
+                       (run-with-idle-timer
+                        1.0
+                        nil
+                        (lambda ()
+                          (setq copilot-disable-predicates pre-copilot-disable-predicates)))))))
+  (advice-add 'keyboard-quit :before #'rk/copilot-quit))
 
 ;; Utility functions
 
