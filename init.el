@@ -1,3 +1,6 @@
+(setq user-full-name "Prateek Sharma"
+      user-mail-address "sharmajiprateek9@gmail.com")
+
 (setq locale-coding-system 'utf-8)
 (set-terminal-coding-system 'utf-8-unix)
 (set-keyboard-coding-system 'utf-8)
@@ -6,12 +9,12 @@
 
 (setq warning-minimum-level :emergency)
 
-;; Set Default font for all frames
 (add-to-list 'default-frame-alist '(font . "Fira Code-12"))
-;; Beware of height
 (set-face-attribute 'default nil :font "Fira Code-12")
 (set-face-attribute 'fixed-pitch nil :font "Roboto-12")
 (set-face-attribute 'variable-pitch nil :font "Roboto-12")
+
+(use-package all-the-icons)
 
 (setq-default
  visual-bell t
@@ -35,9 +38,12 @@
       indicate-buffer-boundaries t
       indicate-empty-lines t
       find-program "fdfind")
+(setq custom-file
+      (if (boundp 'server-socket-dir)
+          (expand-file-name "custom.el" server-socket-dir)
+        (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
+(load custom-file t)
 
-;; Install straight.el
-(setq straight-repository-branch "develop")
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -51,18 +57,15 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-;; Install use-package
 (straight-use-package 'use-package)
 
 ;; Configure use-package to use straight.el by default
 (use-package straight
   :custom (straight-use-package-by-default t))
 
-;; Change the user-emacs-directory to keep unwanted things out of ~/.emacs.d
 (setq user-emacs-directory (expand-file-name "~/.local/share/emacs/")
       url-history-file (expand-file-name "url/history" user-emacs-directory))
 
-;; Sensable Defaults
 (pixel-scroll-precision-mode t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (electric-pair-mode 1)
@@ -94,15 +97,6 @@
            (unless (not project-name)
              (format "[%s] " project-name))))
         "%b"))
-
-(add-hook
- 'after-make-frame-functions
- (defun setup-blah-keys (frame)
-   (with-selected-frame frame
-     (when (display-graphic-p)
-       (define-key input-decode-map (kbd "C-i") [C-i])
-       (define-key input-decode-map (kbd "C-[") [C-lsb])
-       (define-key input-decode-map (kbd "C-m") [C-m])))))
 
 (use-package org
   :mode ("\\.org$" . org-mode)
@@ -148,10 +142,38 @@
           (t (error "Project does not contain a TODO.org file.")))))
   (add-to-list 'project-switch-commands '(project-todo "Todo" "t")))
 
-(use-package paren
-  :straight (:type built-in)
-  :custom
-  (show-paren-when-point-inside-paren t))
+(use-package ibuffer
+  :config
+  (define-ibuffer-column size
+    (:name "Size"
+           :inline t
+           :header-mouse-map ibuffer-size-header-map)
+    (file-size-human-readable (buffer-size))))
+
+(use-package ibuffer-project
+  :after (ibuffer project)
+  :config
+  (add-hook
+   'ibuffer-hook
+   (lambda ()
+     (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+     (unless (eq ibuffer-sorting-mode 'project-file-relative)
+       (ibuffer-do-sort-by-project-file-relative))))
+
+  (add-hook 'ibuffer-hook
+            (lambda ()
+              (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+              (unless (eq ibuffer-sorting-mode 'project-file-relative)
+                (ibuffer-do-sort-by-project-file-relative))))
+
+  (setq ibuffer-formats
+        '((mark modified read-only locked " "
+                (name 18 18 :left :elide)
+                " "
+                (size 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " " project-file-relative))))
 
 (use-package hl-todo
   :straight t
@@ -165,27 +187,17 @@
                                 ("XXX" . "#AF0494")))
   (global-hl-todo-mode))
 
-(use-package mood-line
-  :disabled t
-  ;; Enable mood-line
-  :config
-  (setq mood-line-glyph-alist   '((:checker-info . ?)
-                                  (:checker-issues . ?⚑)
-                                  (:checker-good . ?✔)
-                                  (:checker-checking . ?⏳)
-                                  (:checker-errored . ?✖)
-                                  (:checker-interrupted . ?⏸)
+;; (use-package smartparens
+;;   :diminish
+;;   :config
+;;   (sp-use-smartparens-bindings)
+;;   (smartparens-global-mode))
 
-                                  (:vc-added . ?✚)
-                                  (:vc-needs-merge . ?⟷)
-                                  (:vc-needs-update . ?↓)
-                                  (:vc-conflict . ?✖)
-                                  (:vc-good . ?✔)
-
-                                  (:buffer-narrowed . ?▼)
-                                  (:buffer-modified . ?●)
-                                  (:buffer-read-only . ?■)))
-  (mood-line-mode))
+(use-package avy
+  :custom
+  (avy-timeout-seconds 0.2)
+  :bind
+  ("M-j" . avy-goto-char-timer))
 
 (use-package display-fill-column-indicator
   :straight (:type built-in)
@@ -209,7 +221,6 @@
   (mode-require-final-newline nil)    ; Don't add newlines at the end of files
   (large-file-warning-threshold nil)) ; Open large files without requesting confirmation
 
-;; Use no-littering to automatically set common paths to the new user-emacs-directory
 (use-package no-littering)
 (use-package diminish)
 (use-package delight)
@@ -220,17 +231,8 @@
   (setq gcmh-idle-delay 5
         gcmh-high-cons-threshold (* 100 1024 1024))
   (gcmh-mode 1))
-
-;; Inherit environment variables from Shell.
-(when (memq window-system '(mac ns x))
-  (use-package exec-path-from-shell
-    :config
-    (exec-path-from-shell-initialize)))
-
 (use-package bug-hunter)
-
 (use-package restart-emacs)
-
 (use-package free-keys)
 
 (use-package multiple-cursors
@@ -244,14 +246,6 @@
    ("C-M-<" . mc/skip-to-previous-like-this)
    ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
-;; Keep customization settings in a temporary file (thanks Ambrevar!)
-(setq custom-file
-      (if (boundp 'server-socket-dir)
-          (expand-file-name "custom.el" server-socket-dir)
-        (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
-(load custom-file t)
-
-
 (use-package dired
   :straight (:type built-in)
   :custom
@@ -264,13 +258,6 @@
   :bind (:map dired-mode-map
               (")" . dired-git-info-mode)))
 
-(use-package all-the-icons-dired
-  :init
-  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
-
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-set-key [f5] 'revert-buffer-quick)
-
 (use-package undo-tree
   :diminish
   :init
@@ -278,30 +265,9 @@
 
 (use-package hydra)
 
-(defhydra hydra-zoom (global-map "<f2>")
-  "zoom"
-  ("=" text-scale-increase "in")
-  ("-" text-scale-decrease "out")
-  ("0" text-scale-adjust "reset"))
-
 (use-package rainbow-delimiters
   :hook prog-mode)
 
-;; Tree-sitter for faster and efficient language parsing and highlighting.
-;; (use-package tree-sitter
-;;   :delight " TS"
-;;   :config
-;;   (global-tree-sitter-mode)
-;;   (use-package ts-fold
-;;     :diminish
-;;     :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")))
-
-;; (use-package tree-sitter-langs)
-;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-
-(use-package all-the-icons)
-
-;; Vertico for better completion
 (use-package vertico
   :straight (vertico :files (:defaults "extensions/*")
                      :includes (vertico-buffer
@@ -353,8 +319,6 @@
   :after vertico
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
-
-;; Orderless
 (use-package orderless
   :custom
   (orderless-component-separator 'orderless-escapable-split-on-space)
@@ -385,83 +349,6 @@ orderless."
           (variable (styles orderless+basic))
           (file (styles basic partial-completion)))))
 
-;; (use-package orderless
-;;   :custom
-;;   (completion-styles '(orderless))
-;;   (completion-category-defaults nil)    ; I want to be in control!
-;;   (completion-category-overrides
-;;    '((file (styles basic-remote ; For `tramp' hostname completion with `vertico'
-;;                    orderless
-;;                    ))
-;;      ))
-
-;;   (orderless-component-separator 'orderless-escapable-split-on-space)
-;;   (orderless-matching-styles
-;;    '(orderless-literal
-;;      orderless-prefixes
-;;      orderless-initialism
-;;      orderless-regexp
-;;      orderless-flex
-;;      ;; orderless-strict-leading-initialism
-;;      ;; orderless-strict-initialism
-;;      ;; orderless-strict-full-initialism
-;;      ;; orderless-without-literal          ; Recommended for dispatches instead
-;;      ))
-;;   (orderless-style-dispatchers
-;;    '(prot-orderless-literal-dispatcher
-;;      prot-orderless-strict-initialism-dispatcher
-;;      prot-orderless-flex-dispatcher
-;;      ))
-;;   :init
-;;   (defun orderless--strict-*-initialism (component &optional anchored)
-;;     "Match a COMPONENT as a strict initialism, optionally ANCHORED.
-;; The characters in COMPONENT must occur in the candidate in that
-;; order at the beginning of subsequent words comprised of letters.
-;; Only non-letters can be in between the words that start with the
-;; initials.
-
-;; If ANCHORED is `start' require that the first initial appear in
-;; the first word of the candidate.  If ANCHORED is `both' require
-;; that the first and last initials appear in the first and last
-;; words of the candidate, respectively."
-;;     (orderless--separated-by
-;;         '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)))
-;;       (cl-loop for char across component collect `(seq word-start ,char))
-;;       (when anchored '(seq (group buffer-start) (zero-or-more (not alpha))))
-;;       (when (eq anchored 'both)
-;;         '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)) eol))))
-
-;;   (defun orderless-strict-initialism (component)
-;;     "Match a COMPONENT as a strict initialism.
-;; This means the characters in COMPONENT must occur in the
-;; candidate in that order at the beginning of subsequent words
-;; comprised of letters.  Only non-letters can be in between the
-;; words that start with the initials."
-;;     (orderless--strict-*-initialism component))
-
-;;   (defun prot-orderless-literal-dispatcher (pattern _index _total)
-;;     "Literal style dispatcher using the equals sign as a suffix.
-;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
-;; parses its input."
-;;     (when (string-suffix-p "=" pattern)
-;;       `(orderless-literal . ,(substring pattern 0 -1))))
-
-;;   (defun prot-orderless-strict-initialism-dispatcher (pattern _index _total)
-;;     "Leading initialism  dispatcher using the comma suffix.
-;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
-;; parses its input."
-;;     (when (string-suffix-p "," pattern)
-;;       `(orderless-strict-initialism . ,(substring pattern 0 -1))))
-
-;;   (defun prot-orderless-flex-dispatcher (pattern _index _total)
-;;     "Flex  dispatcher using the tilde suffix.
-;; It matches PATTERN _INDEX and _TOTAL according to how Orderless
-;; parses its input."
-;;     (when (string-suffix-p "." pattern)
-;;       `(orderless-flex . ,(substring pattern 0 -1))))
-;;   )
-
-;; Enable rich annotations using the Marginalia package
 (use-package marginalia
   ;; Either bind `marginalia-cycle' globally or only in the minibuffer
   :bind (("M-A" . marginalia-cycle)
@@ -475,131 +362,6 @@ orderless."
   ;; enabled right away. Note that this forces loading the package.
   (marginalia-mode))
 
-(use-package embark
-  :bind
-  (("C-," . embark-act)
-   ("C-M-," . embark-dwim)
-   ("<f1> B" . embark-bindings))
-  :init
-  (setq prefix-help-command #'embark-prefix-help-command))
-
-;; Consult users will also want the embark-consult package.
-(use-package embark-consult
-  :after (embark consult)
-  :demand t ; only necessary if you have the hook below
-  ;; if you want to have consult previews as you move around an
-  ;; auto-updating embark collect buffer
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
-
-(use-package zenburn-theme)
-
-(use-package color-theme-sanityinc-tomorrow)
-
-(use-package afternoon-theme)
-
-(use-package dracula-theme)
-
-(use-package ef-themes)
-
-(use-package lambda-themes
-  :straight (:type git :host github :repo "lambda-emacs/lambda-themes")
-  :custom
-  (lambda-themes-set-italic-comments t)
-  (lambda-themes-set-italic-keywords t)
-  (lambda-themes-set-variable-pitch t))
-
-(use-package doom-themes)
-
-;; Load Themes
-;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
-
-(defadvice load-theme (before clear-previous-themes activate)
-  "Clear existing theme settings instead of layering them."
-  (mapc #'disable-theme custom-enabled-themes))
-
-(if (not (version<= emacs-version "29.0"))
-    (use-package treesit-auto
-      :demand t
-      :config
-      (setq treesit-auto-install 'prompt)
-      (setq my-js-tsauto-config
-	(make-treesit-auto-recipe
-	 :lang 'javascript
-	 :ts-mode 'js-ts-mode
-	 :remap '(js2-mode js-mode javascript-mode)
-	 :url "https://github.com/tree-sitter/tree-sitter-javascript"
-	 :revision "master"
-	 :source-dir "src"))
-      (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
-      (global-treesit-auto-mode)))
-
-(use-package emacs
-  :init
-  ;; Add all your customizations prior to loading the themes
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-subtle-line-numbers t
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-mode-line '(accented borderless)
-        ;; modus-themes-hl-line '(accented)
-        modus-themes-parens-match '(bold intense))
-
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-
-  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  ;; Vertico commands are hidden in normal buffers.
-  ;; (setq read-extended-command-predicate
-  ;;       #'command-completion-default-include-p)
-
-  ;; Enable recursive minibuffers
-  (setq enable-recursive-minibuffers t)
-  :config
-  ;; Load the theme of your choice:
-  (load-theme 'doom-vibrant t))
-
-(use-package helpful
-  :bind
-  ([remap describe-function] . helpful-callable)
-  ([remap describe-symbol] . helpful-symbol)
-  ([remap describe-variable] . helpful-variable)
-  ([remap describe-command] . helpful-command)
-  ([remap describe-key] . helpful-key))
-
-;; Display available keys.
-(use-package which-key
-  :diminish
-  :config
-  (which-key-mode))
-
-(use-package eldoc
-  :diminish)
-
-(use-package treemacs)
-
-(use-package yasnippet
-  :config
-  (yas-reload-all)
-  (dolist (mode '(org-mode-hook
-                  prog-mode-hook))
-    (add-hook mode 'yas-minor-mode)))
-
-(use-package yasnippet-snippets)
-
-(use-package wgrep)
-(use-package bookmark-view)
-
-;; Example configuration for Consult
 (use-package consult
   ;; Replace bindings. Lazily loaded due by `use-package'.
   :bind (;; C-c bindings (mode-specific-map)
@@ -731,8 +493,125 @@ orderless."
   :custom
   (consult-git-log-grep-open-function #'magit-show-commit))
 
-;; (use-package consult-flycheck)
-;; (use-package consult-projectile)
+(use-package embark
+  :bind
+  (("C-," . embark-act)
+   ("C-M-," . embark-dwim)
+   ("<f1> B" . embark-bindings))
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
+
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+(use-package zenburn-theme)
+(use-package color-theme-sanityinc-tomorrow)
+(use-package afternoon-theme)
+(use-package dracula-theme)
+(use-package ef-themes)
+(use-package lambda-themes
+  :straight (:type git :host github :repo "lambda-emacs/lambda-themes")
+  :custom
+  (lambda-themes-set-italic-comments t)
+  (lambda-themes-set-italic-keywords t)
+  (lambda-themes-set-variable-pitch t))
+(use-package doom-themes)
+
+;; Load Themes
+;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
+
+(defadvice load-theme (before clear-previous-themes activate)
+  "Clear existing theme settings instead of layering them."
+  (mapc #'disable-theme custom-enabled-themes))
+
+(use-package emacs
+  :init
+  ;; Add all your customizations prior to loading the themes
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-subtle-line-numbers t
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-mode-line '(accented borderless)
+        ;; modus-themes-hl-line '(accented)
+        modus-themes-parens-match '(bold intense))
+
+  ;; Add prompt indicator to `completing-read-multiple'.
+  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+
+  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+  ;; Vertico commands are hidden in normal buffers.
+  ;; (setq read-extended-command-predicate
+  ;;       #'command-completion-default-include-p)
+
+  ;; Enable recursive minibuffers
+  (setq enable-recursive-minibuffers t)
+  :config
+  ;; Load the theme of your choice:
+  (load-theme 'doom-vibrant t))
+
+(if (not (version<= emacs-version "29.0"))
+    (use-package treesit-auto
+      :demand t
+      :config
+      (setq treesit-auto-install 'prompt)
+      (setq my-js-tsauto-config
+        (make-treesit-auto-recipe
+         :lang 'javascript
+         :ts-mode 'js-ts-mode
+         :remap '(js2-mode js-mode javascript-mode)
+         :url "https://github.com/tree-sitter/tree-sitter-javascript"
+         :revision "master"
+         :source-dir "src"))
+      (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
+      (global-treesit-auto-mode)))
+
+(use-package helpful
+  :bind
+  ([remap describe-function] . helpful-callable)
+  ([remap describe-symbol] . helpful-symbol)
+  ([remap describe-variable] . helpful-variable)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-key] . helpful-key))
+
+(use-package which-key
+  :diminish
+  :config
+  (which-key-mode))
+
+(use-package flycheck)
+(use-package consult-flycheck)
+
+(use-package flymake
+  :disabled t
+  :straight nil
+  :config
+  (defhydra flymake-map (flymake-mode-map "C-c f")
+    "flymake"
+    ("n" flymake-goto-next-error "next-error")
+    ("p" flymake-goto-prev-error "prev-error")
+    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
+  :hook (prog-mode . flymake-mode))
+
+(use-package flymake-diagnostic-at-point
+  :disabled t
+  :hook flymake-mode
+  :custom
+  (flymake-diagnostic-at-point-timer-delay 0.8))
 
 (use-package eglot
   :disabled t
@@ -765,8 +644,6 @@ orderless."
 (use-package consult-eglot
   :diabled t
   :after (eglot consult))
-
-(use-package flycheck)
 
 (use-package lsp-mode
   :custom
@@ -808,8 +685,6 @@ orderless."
   (use-package consult-lsp)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
-(use-package dap-mode)
-
 (use-package lsp-ui
   :after lsp-mode
   :custom
@@ -817,8 +692,11 @@ orderless."
   (lsp-ui-peek-enable nil)
   (lsp-headerline-breadcrumb-enable nil))
 
+(use-package dap-mode)
+(use-package lsp-treemacs)
+
 (use-package lsp-java
-  :hook (java-mode . lsp-deferred))
+  :hook (java-ts-mode . lsp-deferred))
 
 (use-package lsp-pyright
   :init
@@ -831,29 +709,6 @@ orderless."
 
 (use-package pyvenv
   :hook python-ts-mode)
-
-(use-package yaml-mode)
-
-(use-package fish-mode)
-
-(use-package lsp-treemacs)
-
-(use-package flymake
-  :disabled t
-  :straight nil
-  :config
-  (defhydra flymake-map (flymake-mode-map "C-c f")
-    "flymake"
-    ("n" flymake-goto-next-error "next-error")
-    ("p" flymake-goto-prev-error "prev-error")
-    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
-  :hook (prog-mode . flymake-mode))
-
-(use-package flymake-diagnostic-at-point
-  :disabled t
-  :hook flymake-mode
-  :custom
-  (flymake-diagnostic-at-point-timer-delay 0.8))
 
 (use-package company
   :custom
@@ -876,6 +731,9 @@ orderless."
 
 ;; (use-package company-posframe
 ;;   :hook company-mode)
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
 
 ;; (use-package corfu
 ;;   :straight (corfu :files (:defaults "extensions/*"))
@@ -914,6 +772,14 @@ orderless."
 ;;               ("M-d" . corfu-doc-toggle)
 ;;               ("M-n" . corfu-doc-scroll-up)
 ;;               ("M-p" . corfu-doc-scroll-down)))
+
+;; (use-package kind-icon
+;;   :after corfu
+;;   :custom
+;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+;;   :config
+;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
 ;; ;; Add extensions
 ;; (use-package cape
 ;;   :hook corfu
@@ -933,114 +799,6 @@ orderless."
 ;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
 ;;   )
 
-;; (use-package kind-icon
-;;   :after corfu
-;;   :custom
-;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
-(use-package vterm
-  :config
-  (setq vterm-kill-buffer-on-exit t
-        vterm-max-scrollback 5000))
-
-;; (use-package projectile
-;;   :bind ("C-x p" . projectile-command-map)
-;;   :custom
-;;   (projectile-project-search-path '(("~/Projects/" . 1)))
-;;   :config
-;;   (projectile-global-mode 1))
-
-(use-package ibuffer
-  :config
-  (define-ibuffer-column size
-    (:name "Size"
-           :inline t
-           :header-mouse-map ibuffer-size-header-map)
-    (file-size-human-readable (buffer-size))))
-
-(use-package ibuffer-project
-  :after (ibuffer project)
-  :config
-  (add-hook
-   'ibuffer-hook
-   (lambda ()
-     (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-     (unless (eq ibuffer-sorting-mode 'project-file-relative)
-       (ibuffer-do-sort-by-project-file-relative))))
-
-  (add-hook 'ibuffer-hook
-            (lambda ()
-              (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-              (unless (eq ibuffer-sorting-mode 'project-file-relative)
-                (ibuffer-do-sort-by-project-file-relative))))
-
-  (setq ibuffer-formats
-        '((mark modified read-only locked " "
-                (name 18 18 :left :elide)
-                " "
-                (size 9 -1 :right)
-                " "
-                (mode 16 16 :left :elide)
-                " " project-file-relative))))
-
-;; (use-package ibuffer-projectile
-;;   :hook (ibuffer . ibuffer-projectile-set-filter-groups))
-
-(use-package magit
-  :config
-  (magit-auto-revert-mode t))
-
-;; (use-package smartparens
-;;   :diminish
-;;   :config
-;;   (sp-use-smartparens-bindings)
-;;   (smartparens-global-mode))
-
-(use-package avy
-  :custom
-  (avy-timeout-seconds 0.2)
-  :bind
-  ("M-j" . avy-goto-char-timer))
-
-(use-package git-gutter-fringe
-  :diminish
-  :config
-  (setq git-gutter:update-interval 0.1)
-  (global-git-gutter-mode)
-  (diminish 'git-gutter-mode " GG")
-  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom))
-
-;; (use-package discover
-;;   :config
-;;   (global-discover-mode 1))
-
-;; Restclient
-(use-package restclient
-  :straight t
-  :defer t
-  :mode ("\\.rest\\'". restclient-mode)
-  :config (add-hook 'restclient-mode-hook (lambda ()
-                                            (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
-;; Process management
-(use-package proced
-  :commands proced
-  :config
-  (setq proced-enable-color-flag t))
-
-(use-package redacted
-  :straight t
-  :commands (redacted-mode)
-  :config (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
-
-(use-package lemon
-  :disabled t
-  :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
-  :config (lemon-mode 1))
-
 (use-package copilot
   :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
   :disabled t
@@ -1049,7 +807,7 @@ orderless."
   (with-eval-after-load 'company
     ;; disable inline previews
     (delq 'company-preview-if-just-one-frontend company-frontends))
-  
+
   (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
   (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
 
@@ -1069,7 +827,46 @@ cleared, make sure the overlay doesn't come back too soon."
                           (setq copilot-disable-predicates pre-copilot-disable-predicates)))))))
   (advice-add 'keyboard-quit :before #'rk/copilot-quit))
 
-;; Utility functions
+(use-package company-tabnine)
+
+(use-package magit
+  :config
+  (magit-auto-revert-mode t))
+
+(use-package git-gutter-fringe
+  :diminish
+  :config
+  (setq git-gutter:update-interval 0.1)
+  (global-git-gutter-mode)
+  (diminish 'git-gutter-mode " GG")
+  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom))
+
+(use-package vterm
+  :config
+  (setq vterm-kill-buffer-on-exit t
+        vterm-max-scrollback 5000))
+
+(use-package restclient
+  :straight t
+  :defer t
+  :mode ("\\.rest\\'". restclient-mode)
+  :config (add-hook 'restclient-mode-hook (lambda ()
+                                            (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
+
+(use-package proced
+  :config
+  (setq proced-enable-color-flag t))
+
+(use-package redacted
+  :config
+  (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
+
+(use-package lemon
+  :disabled t
+  :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
+  :config (lemon-mode 1))
 
 (defadvice kill-line (before kill-line-autoreindent activate)
   "Kill excess whitespace when joining lines.
@@ -1082,13 +879,13 @@ If the next line is joined to the current line, kill the extra indent whitespace
 (defadvice backward-kill-word (around delete-pair activate)
   (if (eq (char-syntax (char-before)) ?\()
       (progn
-	(backward-char 1)
-	(save-excursion
-	  (forward-sexp 1)
-	  (delete-char -1))
-	(forward-char 1)
-	(append-next-kill)
-	(kill-backward-chars 1))
+        (backward-char 1)
+        (save-excursion
+          (forward-sexp 1)
+          (delete-char -1))
+        (forward-char 1)
+        (append-next-kill)
+        (kill-backward-chars 1))
     ad-do-it))
 
 ;; need to improve this
