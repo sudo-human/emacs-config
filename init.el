@@ -1,4 +1,3 @@
-;; Very important!!! In some systems the encoding can fuck up.
 (setq locale-coding-system 'utf-8)
 (set-terminal-coding-system 'utf-8-unix)
 (set-keyboard-coding-system 'utf-8)
@@ -15,7 +14,6 @@
 (set-face-attribute 'variable-pitch nil :font "Roboto-12")
 
 (setq-default
- inhibit-startup-message t
  visual-bell t
  read-process-output-max (* 3 1024 1024)
  indent-tabs-mode nil
@@ -34,6 +32,8 @@
       scroll-preserve-screen-position 1
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
+      indicate-buffer-boundaries t
+      indicate-empty-lines t
       find-program "fdfind")
 
 ;; Install straight.el
@@ -134,6 +134,7 @@
   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 
 (use-package project
+  :straight (:type built-in)
   :bind (:map project-prefix-map
               ("t" . project-todo))
   :config
@@ -196,7 +197,7 @@
   )
 
 (use-package files
-  :straight nil
+  :straight (:type built-in)
   :custom
   (backup-directory-alist '(("." . "~/.emacs.d/backups")))
   (backup-by-copying t)               ; Always use copying to create backup files
@@ -263,6 +264,10 @@
   :bind (:map dired-mode-map
               (")" . dired-git-info-mode)))
 
+(use-package all-the-icons-dired
+  :init
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key [f5] 'revert-buffer-quick)
 
@@ -297,18 +302,17 @@
 (use-package all-the-icons)
 
 ;; Vertico for better completion
-(straight-use-package '( vertico :files (:defaults "extensions/*")
-                         :includes (vertico-buffer
-                                    vertico-multiform
-                                    vertico-directory
-                                    vertico-flat
-                                    vertico-indexed
-                                    vertico-mouse
-                                    vertico-quick
-                                    vertico-repeat
-                                    vertico-reverse)))
 (use-package vertico
-  :straight t
+  :straight (vertico :files (:defaults "extensions/*")
+                     :includes (vertico-buffer
+                                vertico-multiform
+                                vertico-directory
+                                vertico-flat
+                                vertico-indexed
+                                vertico-mouse
+                                vertico-quick
+                                vertico-repeat
+                                vertico-reverse))
   :config
   (setq vertico-count 13)
   (setq vertico-cycle t)
@@ -364,6 +368,14 @@
                                orderless-flex
                                ))
   :config
+  (defun orderless-company-completion (fn &rest args)
+    "Highlight company matches correctly, and try default completion styles before
+orderless."
+    (let ((orderless-match-faces [completions-common-part])
+          (completion-styles '(basic partial-completion orderless)))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around 'orderless-company-completion)
+
   (orderless-define-completion-style orderless+basic
     (orderless-matching-styles '(orderless-literal
                                  orderless-regexp)))
@@ -554,7 +566,7 @@
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-one t))
+  (load-theme 'doom-vibrant t))
 
 (use-package helpful
   :bind
@@ -758,6 +770,7 @@
 
 (use-package lsp-mode
   :custom
+  (lsp-completion-provider :none)
   (lsp-file-watch-threshold 100000)
   (lsp-keymap-prefix "C-c l")
   :init
@@ -823,7 +836,7 @@
 
 (use-package fish-mode)
 
-;; (use-package lsp-treemacs)
+(use-package lsp-treemacs)
 
 (use-package flymake
   :disabled t
@@ -845,13 +858,14 @@
 (use-package company
   :custom
   (company-minimum-prefix-length 1)
+  (company-abort-on-unique-match nil)
   (company-show-quick-access t)
   (company-selection-wrap-around t)
   (company-tooltip-align-annotations t)
   (company-dabbrev-other-buffers nil)
   (company-dabbrev-downcase nil)
   (company-idle-delay 0.0)
-  (company-backends '((company-capf company-dabbrev-code company-yasnippet company-files)))
+  (company-backends '(company-capf company-yasnippet company-files))
   (company-text-icons-add-background t)
   (company-format-margin-function #'company-text-icons-margin)
   (company-frontends '(company-pseudo-tooltip-frontend))
@@ -900,7 +914,6 @@
 ;;               ("M-d" . corfu-doc-toggle)
 ;;               ("M-n" . corfu-doc-scroll-up)
 ;;               ("M-p" . corfu-doc-scroll-down)))
-
 ;; ;; Add extensions
 ;; (use-package cape
 ;;   :hook corfu
@@ -996,7 +1009,10 @@
   :config
   (setq git-gutter:update-interval 0.1)
   (global-git-gutter-mode)
-  (diminish 'git-gutter-mode " GG"))
+  (diminish 'git-gutter-mode " GG")
+  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom))
 
 ;; (use-package discover
 ;;   :config
@@ -1009,7 +1025,6 @@
   :mode ("\\.rest\\'". restclient-mode)
   :config (add-hook 'restclient-mode-hook (lambda ()
                                             (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
-
 ;; Process management
 (use-package proced
   :commands proced
@@ -1055,6 +1070,26 @@ cleared, make sure the overlay doesn't come back too soon."
   (advice-add 'keyboard-quit :before #'rk/copilot-quit))
 
 ;; Utility functions
+
+(defadvice kill-line (before kill-line-autoreindent activate)
+  "Kill excess whitespace when joining lines.
+If the next line is joined to the current line, kill the extra indent whitespace in front of the next line."
+  (when (and (eolp) (not (bolp)))
+    (save-excursion
+      (forward-char 1)
+      (just-one-space 1))))
+
+(defadvice backward-kill-word (around delete-pair activate)
+  (if (eq (char-syntax (char-before)) ?\()
+      (progn
+	(backward-char 1)
+	(save-excursion
+	  (forward-sexp 1)
+	  (delete-char -1))
+	(forward-char 1)
+	(append-next-kill)
+	(kill-backward-chars 1))
+    ad-do-it))
 
 ;; need to improve this
 (defun copy-line (arg)
