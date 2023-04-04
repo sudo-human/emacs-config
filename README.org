@@ -1036,7 +1036,7 @@ The auto-completion popup system that rocks 🤩
     (company-dabbrev-other-buffers nil)
     (company-dabbrev-downcase nil)
     (company-idle-delay 0.0)
-    (company-backends '(company-capf company-yasnippet company-files))
+    (company-backends '((company-capf :with company-yasnippet) company-files))
     (company-text-icons-add-background t)
     (company-format-margin-function #'company-text-icons-margin)
     (company-frontends '(company-pseudo-tooltip-frontend))
@@ -1169,7 +1169,7 @@ The auto-completion popup system that rocks 🤩
 
 ** Tabnine
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package company-tabnine
     :hook company-mode
     :config

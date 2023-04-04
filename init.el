@@ -727,7 +727,7 @@ orderless."
   (company-dabbrev-other-buffers nil)
   (company-dabbrev-downcase nil)
   (company-idle-delay 0.0)
-  (company-backends '(company-capf company-yasnippet company-files))
+  (company-backends '((company-capf :with company-yasnippet) company-files))
   (company-text-icons-add-background t)
   (company-format-margin-function #'company-text-icons-margin)
   (company-frontends '(company-pseudo-tooltip-frontend))
@@ -833,11 +833,6 @@ cleared, make sure the overlay doesn't come back too soon."
                         (lambda ()
                           (setq copilot-disable-predicates pre-copilot-disable-predicates)))))))
   (advice-add 'keyboard-quit :before #'rk/copilot-quit))
-
-(use-package company-tabnine
-  :hook company-mode
-  :config
-  (push #'(company-capf company-tabnine :with company-yasnippet) company-backends))
 
 (use-package magit
   :config
