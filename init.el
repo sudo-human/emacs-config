@@ -14,8 +14,6 @@
 (set-face-attribute 'fixed-pitch nil :font "Roboto-12")
 (set-face-attribute 'variable-pitch nil :font "Roboto-12")
 
-(use-package all-the-icons)
-
 (setq-default
  visual-bell t
  read-process-output-max (* 3 1024 1024)
@@ -97,6 +95,8 @@
            (unless (not project-name)
              (format "[%s] " project-name))))
         "%b"))
+
+(use-package all-the-icons)
 
 (use-package org
   :mode ("\\.org$" . org-mode)
@@ -710,6 +710,13 @@ orderless."
 (use-package pyvenv
   :hook python-ts-mode)
 
+(use-package yasnippet
+  :config
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets
+  :after yasnippet)
+
 (use-package company
   :custom
   (company-minimum-prefix-length 1)
@@ -827,7 +834,10 @@ cleared, make sure the overlay doesn't come back too soon."
                           (setq copilot-disable-predicates pre-copilot-disable-predicates)))))))
   (advice-add 'keyboard-quit :before #'rk/copilot-quit))
 
-(use-package company-tabnine)
+(use-package company-tabnine
+  :hook company-mode
+  :config
+  (push #'(company-capf company-tabnine :with company-yasnippet) company-backends))
 
 (use-package magit
   :config

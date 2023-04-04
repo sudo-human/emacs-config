@@ -149,13 +149,6 @@ These settings ensure that all the symbols are rendered correctly.
   (set-face-attribute 'variable-pitch nil :font "Roboto-12")
 #+end_src
 
-** Icons
-
-All the icons 🤩
-#+begin_src emacs-lisp
-  (use-package all-the-icons)
-#+end_src
-
 ** Defaults
 
 #+begin_src emacs-lisp
@@ -262,6 +255,13 @@ Change the =user-emacs-directory= to keep unwanted things out of ~/.emacs.d
              (unless (not project-name)
                (format "[%s] " project-name))))
           "%b"))
+#+end_src
+
+** Icons
+
+All the icons 🤩
+#+begin_src emacs-lisp
+  (use-package all-the-icons)
 #+end_src
 
 ** Org Mode
@@ -1012,6 +1012,16 @@ Pretty awesome lsp system.
     :hook python-ts-mode)
 #+end_src
 
+** Yasnippet
+
+#+begin_src emacs-lisp
+  (use-package yasnippet
+    :config
+    (yas-global-mode 1))
+
+  (use-package yasnippet-snippets
+    :after yasnippet)
+#+end_src
 ** Company mode
 
 The auto-completion popup system that rocks 🤩
@@ -1160,7 +1170,10 @@ The auto-completion popup system that rocks 🤩
 ** Tabnine
 
 #+begin_src emacs-lisp
-  (use-package company-tabnine)
+  (use-package company-tabnine
+    :hook company-mode
+    :config
+    (push #'(company-capf company-tabnine :with company-yasnippet) company-backends))
 #+end_src
 
 ** Magit
