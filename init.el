@@ -29,8 +29,8 @@
       scroll-margin 8
       auto-revert-check-vc-info t
       scroll-step 1
-      scroll-conservatively 1000
-      scroll-preserve-screen-position 1
+      scroll-conservatively 101
+      scroll-preserve-screen-position t
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
       indicate-buffer-boundaries t
@@ -76,7 +76,7 @@
 (save-place-mode t)
 (recentf-mode t)
 (global-display-line-numbers-mode)
-(global-hl-line-mode)
+;; (global-hl-line-mode)
 (global-auto-revert-mode 1)
 (make-variable-buffer-local 'global-hl-line-mode)
 (dolist (mode '(org-mode-hook
@@ -98,6 +98,73 @@
 
 (use-package all-the-icons)
 
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-minibuffer nil) ; messes with esc to quit
+  (setq evil-undo-system 'undo-tree)
+  (setq evil-kill-on-visual-paste nil)
+  (setq evil-respect-visual-line-mode nil)
+  (setq evil-symbol-word-search t)
+  (setq evil-undo-system 'undo-redo)
+
+  :config
+  (evil-mode t)
+  (defalias #'forward-evil-word #'forward-evil-symbol)
+  (evil-set-leader nil (kbd "SPC"))
+  (evil-set-leader 'insert (kbd "C-SPC"))
+  (evil-set-leader nil (kbd "SPC"))
+
+  ;; Enable/disable certain jump targets for C-o and C-i
+  (evil-set-command-property 'evil-visual-char :jump t)
+  (evil-set-command-property 'evil-visual-line :jump t)
+  (evil-set-command-property 'evil-backward-paragraph :jump nil)
+  (evil-set-command-property 'evil-forward-paragraph :jump nil)
+  (evil-set-command-property 'evil-search-next :jump nil)
+  (evil-set-command-property 'evil-search-previous :jump nil)
+
+  ;; Up/Down on visual instead of actual lines
+  (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
+  (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
+
+  (defun meain/recenter-advice (orig-fn &rest args)
+    "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
+    (apply orig-fn args)
+    (recenter))
+  (defun meain/recenter-top-advice (orig-fn &rest args)
+    "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
+    (apply orig-fn args)
+    (recenter 13))
+
+  ;; (advice-add 'evil-jump-forward :around #'meain/recenter-advice)
+  ;; (advice-add 'evil-jump-backward :around #'meain/recenter-advice)
+  ;; (advice-add 'evil-search-next :around #'meain/recenter-top-advice)
+  ;; (advice-add 'evil-search-previous :around #'meain/recenter-top-advice)
+  )
+
+;; Evil leader
+(use-package evil-leader
+  :straight t
+  :after evil
+  :config
+  (global-evil-leader-mode)
+  (evil-leader/set-leader "<SPC>"))
+
+(use-package evil-collection
+  :straight t
+  :after evil
+  :config
+  (setq evil-collection-magit-want-horizontal-movement t)
+  (setq evil-collection-magit-use-y-for-yank t)
+  (evil-collection-init))
+
+(use-package evil-commentary
+  :straight t
+  :config (evil-commentary-mode))
+
 (use-package org
   :mode ("\\.org$" . org-mode)
   :config
@@ -112,6 +179,8 @@
 
 (use-package harpoon
   :straight t
+  :custom
+  (harpoon-project-package 'project)
   :init
   (define-prefix-command 'harpoon-map)
   (global-set-key (kbd "C-'") 'harpoon-map)
@@ -220,6 +289,13 @@
   (auto-save-default nil)             ; Stop creating #autosave# files
   (mode-require-final-newline nil)    ; Don't add newlines at the end of files
   (large-file-warning-threshold nil)) ; Open large files without requesting confirmation
+
+(use-package files
+  :ensure nil
+  :config
+  (setq confirm-kill-processes nil
+        create-lockfiles nil ; don't create .# files (crashes 'npm start')
+        make-backup-files nil))
 
 (use-package no-littering)
 (use-package diminish)
@@ -522,6 +598,9 @@ orderless."
   (lambda-themes-set-italic-keywords t)
   (lambda-themes-set-variable-pitch t))
 (use-package doom-themes)
+(use-package nordic-night-theme
+  :straight (:type git :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -727,7 +806,7 @@ orderless."
   (company-dabbrev-other-buffers nil)
   (company-dabbrev-downcase nil)
   (company-idle-delay 0.0)
-  (company-backends '((company-capf :with company-yasnippet) company-files))
+  (company-backends '(company-capf company-yasnippet company-files))
   (company-text-icons-add-background t)
   (company-format-margin-function #'company-text-icons-margin)
   (company-frontends '(company-pseudo-tooltip-frontend))
@@ -740,6 +819,8 @@ orderless."
 ;;   :hook company-mode)
 
 (use-package company-box
+  :custom
+  (company-box-frame-behavior 'point)
   :hook (company-mode . company-box-mode))
 
 ;; (use-package corfu
