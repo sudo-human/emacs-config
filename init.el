@@ -9,10 +9,10 @@
 
 (setq warning-minimum-level :emergency)
 
-(add-to-list 'default-frame-alist '(font . "Fira Code-12"))
-(set-face-attribute 'default nil :font "Fira Code-12")
-(set-face-attribute 'fixed-pitch nil :font "Roboto-12")
-(set-face-attribute 'variable-pitch nil :font "Roboto-12")
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
+(set-face-attribute 'default nil :font "JetBrains Mono-12")
+(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-12")
+(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-12")
 
 (setq-default
  visual-bell t
@@ -97,73 +97,6 @@
         "%b"))
 
 (use-package all-the-icons)
-
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-minibuffer nil) ; messes with esc to quit
-  (setq evil-undo-system 'undo-tree)
-  (setq evil-kill-on-visual-paste nil)
-  (setq evil-respect-visual-line-mode nil)
-  (setq evil-symbol-word-search t)
-  (setq evil-undo-system 'undo-redo)
-
-  :config
-  (evil-mode t)
-  (defalias #'forward-evil-word #'forward-evil-symbol)
-  (evil-set-leader nil (kbd "SPC"))
-  (evil-set-leader 'insert (kbd "C-SPC"))
-  (evil-set-leader nil (kbd "SPC"))
-
-  ;; Enable/disable certain jump targets for C-o and C-i
-  (evil-set-command-property 'evil-visual-char :jump t)
-  (evil-set-command-property 'evil-visual-line :jump t)
-  (evil-set-command-property 'evil-backward-paragraph :jump nil)
-  (evil-set-command-property 'evil-forward-paragraph :jump nil)
-  (evil-set-command-property 'evil-search-next :jump nil)
-  (evil-set-command-property 'evil-search-previous :jump nil)
-
-  ;; Up/Down on visual instead of actual lines
-  (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
-  (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
-
-  (defun meain/recenter-advice (orig-fn &rest args)
-    "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
-    (apply orig-fn args)
-    (recenter))
-  (defun meain/recenter-top-advice (orig-fn &rest args)
-    "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
-    (apply orig-fn args)
-    (recenter 13))
-
-  ;; (advice-add 'evil-jump-forward :around #'meain/recenter-advice)
-  ;; (advice-add 'evil-jump-backward :around #'meain/recenter-advice)
-  ;; (advice-add 'evil-search-next :around #'meain/recenter-top-advice)
-  ;; (advice-add 'evil-search-previous :around #'meain/recenter-top-advice)
-  )
-
-;; Evil leader
-(use-package evil-leader
-  :straight t
-  :after evil
-  :config
-  (global-evil-leader-mode)
-  (evil-leader/set-leader "<SPC>"))
-
-(use-package evil-collection
-  :straight t
-  :after evil
-  :config
-  (setq evil-collection-magit-want-horizontal-movement t)
-  (setq evil-collection-magit-use-y-for-yank t)
-  (evil-collection-init))
-
-(use-package evil-commentary
-  :straight t
-  :config (evil-commentary-mode))
 
 (use-package org
   :mode ("\\.org$" . org-mode)
@@ -811,17 +744,11 @@ orderless."
   (company-format-margin-function #'company-text-icons-margin)
   (company-frontends '(company-pseudo-tooltip-frontend))
   (company-tooltip-minimum 8)
-  (company-tooltip-flip-when-above t)
   :config
   (global-company-mode))
 
 ;; (use-package company-posframe
 ;;   :hook company-mode)
-
-(use-package company-box
-  :custom
-  (company-box-frame-behavior 'point)
-  :hook (company-mode . company-box-mode))
 
 ;; (use-package corfu
 ;;   :straight (corfu :files (:defaults "extensions/*"))

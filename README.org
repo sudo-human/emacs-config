@@ -143,10 +143,10 @@ These settings ensure that all the symbols are rendered correctly.
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "Fira Code-12"))
-  (set-face-attribute 'default nil :font "Fira Code-12")
-  (set-face-attribute 'fixed-pitch nil :font "Roboto-12")
-  (set-face-attribute 'variable-pitch nil :font "Roboto-12")
+  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
+  (set-face-attribute 'default nil :font "JetBrains Mono-12")
+  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-12")
+  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-12")
 #+end_src
 
 ** Defaults
@@ -266,7 +266,7 @@ All the icons 🤩
 
 ** Evil
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package evil
     :straight t
     :init
@@ -278,7 +278,7 @@ All the icons 🤩
     (setq evil-kill-on-visual-paste nil)
     (setq evil-respect-visual-line-mode nil)
     (setq evil-symbol-word-search t)
-    (setq evil-undo-system 'undo-redo)
+    (setq evil-search-module 'evil-search)
 
     :config
     (evil-mode t)
@@ -286,7 +286,8 @@ All the icons 🤩
     (evil-set-leader nil (kbd "SPC"))
     (evil-set-leader 'insert (kbd "C-SPC"))
     (evil-set-leader nil (kbd "SPC"))
-
+    (evil-global-set-key 'motion (kbd "SPC") nil)
+    (evil-global-set-key 'motion (kbd "RET") nil)
     ;; Enable/disable certain jump targets for C-o and C-i
     (evil-set-command-property 'evil-visual-char :jump t)
     (evil-set-command-property 'evil-visual-line :jump t)
@@ -333,6 +334,35 @@ All the icons 🤩
   (use-package evil-commentary
     :straight t
     :config (evil-commentary-mode))
+
+  (use-package evil-goggles
+    :after evil
+    :hook evil-mode
+    :custom
+    (evil-goggles-pulse nil)
+    (evil-goggles-duration 0.1)
+    :config
+    (evil-goggles-mode)
+    (evil-goggles-use-diff-faces))
+
+  (use-package evil-surround
+    :defer 1
+    :straight t
+    :config (global-evil-surround-mode 1))
+
+  ;; Evil text objects
+  (use-package evil-textobj-line :straight t :defer 1)
+  (use-package evil-textobj-syntax :straight t :defer 1)
+  (use-package evil-indent-plus
+    :straight t
+    :defer 1
+    :config
+    (define-key evil-inner-text-objects-map "i" 'evil-indent-plus-i-indent)
+    (define-key evil-outer-text-objects-map "i" 'evil-indent-plus-a-indent)
+    (define-key evil-inner-text-objects-map "I" 'evil-indent-plus-i-indent-up)
+    (define-key evil-outer-text-objects-map "I" 'evil-indent-plus-a-indent-up)
+    (define-key evil-inner-text-objects-map "J" 'evil-indent-plus-i-indent-up-down)
+    (define-key evil-outer-text-objects-map "J" 'evil-indent-plus-a-indent-up-down))
 #+end_src
 
 ** Org Mode
@@ -1128,7 +1158,6 @@ The auto-completion popup system that rocks 🤩
     (company-format-margin-function #'company-text-icons-margin)
     (company-frontends '(company-pseudo-tooltip-frontend))
     (company-tooltip-minimum 8)
-    (company-tooltip-flip-when-above t)
     :config
     (global-company-mode))
 #+end_src
@@ -1142,7 +1171,7 @@ The auto-completion popup system that rocks 🤩
 
 *** Company-box frontend
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package company-box
     :custom
     (company-box-frame-behavior 'point)
