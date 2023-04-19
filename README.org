@@ -13,6 +13,23 @@ This is run before the actual init file
     (setq package-enable-at-startup nil)
   #+END_SRC
 
+*** Measure startup speed
+
+A small function to print out the loading time and number of GCs during the loading.
+Can be useful as a point of data for optimizing Emacs startup time.
+
+  #+BEGIN_SRC emacs-lisp :tangle early-init.el
+    (setq ps/emacs-started nil)
+    (add-hook 'emacs-startup-hook
+              (lambda ()
+                (message "Emacs loaded in %s with %d garbage collections."
+                         (format "%.2f seconds"
+                                 (float-time
+                                  (time-subtract after-init-time before-init-time)))
+                         gcs-done))
+              (setq ps/emacs-started t))
+  #+END_SRC
+
 ** Garbage collector is a real pain in the ass
 Increase the =gc-cons-threshold= value and the again decrease it to improve startup time and performance in general.
 
@@ -140,13 +157,30 @@ These settings ensure that all the symbols are rendered correctly.
   (setq warning-minimum-level :emergency)
 #+end_src
 
+** Small GC optimization
+
+Run GC when Emacs loses focus. +Time will tell if that’s a good idea.+
+
+Some time has passed, and I still don’t know if there is any quantifiable advantage to this, but it doesn’t hurt.
+
+#+begin_src emacs-lisp
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (if (boundp 'after-focus-change-function)
+                  (add-function :after after-focus-change-function
+                                (lambda ()
+                                  (unless (frame-focus-state)
+                                    (garbage-collect))))
+                (add-hook 'after-focus-change-function 'garbage-collect))))
+#+end_src
+
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
-  (set-face-attribute 'default nil :font "JetBrains Mono-12")
-  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-12")
-  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-12")
+  (add-to-list 'default-frame-alist '(font . "Agave-13"))
+  (set-face-attribute 'default nil :font "Agave-13")
+  (set-face-attribute 'fixed-pitch nil :font "Agave-13")
+  (set-face-attribute 'variable-pitch nil :font "Agave-13")
 #+end_src
 
 ** Defaults
@@ -159,8 +193,12 @@ These settings ensure that all the symbols are rendered correctly.
    set-mark-command-repeat-pop t
    vc-follow-symlinks t)
 
+  (setq confirm-kill-emacs 'y-or-n-p)
+
   (setq display-line-numbers-type 'relative
         display-line-numbers-width-start t
+        use-dialog-box nil
+        make-pointer-invisible t
         load-prefer-newer t
         max-lisp-eval-depth 10000
         max-specpdl-size 10000
@@ -179,6 +217,25 @@ These settings ensure that all the symbols are rendered correctly.
             (expand-file-name "custom.el" server-socket-dir)
           (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
   (load custom-file t)
+
+  (defun scroll-up-half ()
+    (interactive)
+    (scroll-up-command
+     (floor
+      (- (window-height)
+         next-screen-context-lines)
+      2)))
+
+  (defun scroll-down-half ()
+    (interactive)
+    (scroll-down-command
+     (floor
+      (- (window-height)
+         next-screen-context-lines)
+      2)))
+
+  (global-set-key [remap scroll-up-command] 'scroll-up-half)
+  (global-set-key [remap scroll-down-command] 'scroll-down-half)
 #+end_src
 
 ** Package Management - Straight.el
@@ -225,6 +282,7 @@ Change the =user-emacs-directory= to keep unwanted things out of ~/.emacs.d
   (electric-pair-mode 1)
   (context-menu-mode t)
   (blink-cursor-mode -1)
+  (winner-mode 1)
   ;; (tool-bar-mode -1)
   ;; (menu-bar-mode -1)
   ;; (scroll-bar-mode -1)
@@ -257,6 +315,12 @@ Change the =user-emacs-directory= to keep unwanted things out of ~/.emacs.d
           "%b"))
 #+end_src
 
+** General.el
+
+#+begin_src emacs-lisp
+  (use-package general)
+#+end_src
+
 ** Icons
 
 All the icons 🤩
@@ -273,16 +337,16 @@ All the icons 🤩
     (setq evil-want-integration t)
     (setq evil-want-keybinding nil)
     (setq evil-want-C-u-scroll t)
-    (setq evil-want-minibuffer nil) ; messes with esc to quit
     (setq evil-undo-system 'undo-tree)
     (setq evil-kill-on-visual-paste nil)
     (setq evil-respect-visual-line-mode nil)
     (setq evil-symbol-word-search t)
     (setq evil-search-module 'evil-search)
-
+    (setq evil-split-window-below t)
+    (setq evil-vsplit-winodw-right t)
     :config
     (evil-mode t)
-    (defalias #'forward-evil-word #'forward-evil-symbol)
+    ;; (defalias #'forward-evil-word #'forward-evil-symbol)
     (evil-set-leader nil (kbd "SPC"))
     (evil-set-leader 'insert (kbd "C-SPC"))
     (evil-set-leader nil (kbd "SPC"))
@@ -298,22 +362,7 @@ All the icons 🤩
 
     ;; Up/Down on visual instead of actual lines
     (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
-    (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
-
-    (defun meain/recenter-advice (orig-fn &rest args)
-      "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
-      (apply orig-fn args)
-      (recenter))
-    (defun meain/recenter-top-advice (orig-fn &rest args)
-      "Used to recenter the buffer after `ORIG-FN' passing down `ARGS' down to it."
-      (apply orig-fn args)
-      (recenter 13))
-
-    ;; (advice-add 'evil-jump-forward :around #'meain/recenter-advice)
-    ;; (advice-add 'evil-jump-backward :around #'meain/recenter-advice)
-    ;; (advice-add 'evil-search-next :around #'meain/recenter-top-advice)
-    ;; (advice-add 'evil-search-previous :around #'meain/recenter-top-advice)
-    )
+    (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line))
 
   ;; Evil leader
   (use-package evil-leader
@@ -322,14 +371,6 @@ All the icons 🤩
     :config
     (global-evil-leader-mode)
     (evil-leader/set-leader "<SPC>"))
-
-  (use-package evil-collection
-    :straight t
-    :after evil
-    :config
-    (setq evil-collection-magit-want-horizontal-movement t)
-    (setq evil-collection-magit-use-y-for-yank t)
-    (evil-collection-init))
 
   (use-package evil-commentary
     :straight t
@@ -350,6 +391,19 @@ All the icons 🤩
     :straight t
     :config (global-evil-surround-mode 1))
 
+  (use-package evil-lion
+    :straight t
+    :config
+    (setq evil-lion-left-align-key (kbd "g a"))
+    (setq evil-lion-right-align-key (kbd "g A"))
+    (evil-lion-mode))
+
+  (use-package evil-matchit
+    :straight t
+    :disabled
+    :config
+    (global-evil-matchit-mode 1))
+
   ;; Evil text objects
   (use-package evil-textobj-line :straight t :defer 1)
   (use-package evil-textobj-syntax :straight t :defer 1)
@@ -363,6 +417,14 @@ All the icons 🤩
     (define-key evil-outer-text-objects-map "I" 'evil-indent-plus-a-indent-up)
     (define-key evil-inner-text-objects-map "J" 'evil-indent-plus-i-indent-up-down)
     (define-key evil-outer-text-objects-map "J" 'evil-indent-plus-a-indent-up-down))
+
+  (use-package evil-collection
+    :straight t
+    :after evil
+    :config
+    (setq evil-collection-magit-want-horizontal-movement t)
+    (setq evil-collection-magit-use-y-for-yank t)
+    (evil-collection-init))
 #+end_src
 
 ** Org Mode
@@ -380,8 +442,9 @@ All the icons 🤩
 #+begin_src emacs-lisp
   (use-package doom-modeline
     :ensure t
-    :custom
-    (doom-modeline-vcs-max-length 30)
+    :init
+    (setq doom-modeline-vcs-max-length 30
+          doom-modeline-buffer-modification-icon nil)
     :hook (after-init . doom-modeline-mode))
 #+end_src
 
@@ -463,6 +526,9 @@ All the icons 🤩
                   (mode 16 16 :left :elide)
                   " " project-file-relative))))
 
+  (general-def ctl-x-map
+    "C-b" nil
+    "B" 'ibuffer-jump)
 #+end_src
 
 ** Hl-todo
@@ -483,12 +549,13 @@ All the icons 🤩
 
 ** Smartparens
 
-#+begin_src emacs-lisp
-  ;; (use-package smartparens
-  ;;   :diminish
-  ;;   :config
-  ;;   (sp-use-smartparens-bindings)
-  ;;   (smartparens-global-mode))
+#+begin_src emacs-lisp :tangle no
+  (use-package smartparens
+    :disabled
+    :diminish
+    :config
+    (sp-use-smartparens-bindings)
+    (smartparens-global-mode))
 #+end_src
 
 ** Avy
@@ -577,7 +644,7 @@ All the icons 🤩
 ** Dired
 
 Hide extra detials in dired and also kill dired buffer when opening a new one.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package dired
     :straight (:type built-in)
     :custom
@@ -587,11 +654,20 @@ Hide extra detials in dired and also kill dired buffer when opening a new one.
 #+end_src
 
 Git info like github in dired
-#+begin_src  emacs-lisp
+#+begin_src  emacs-lisp :tangle no
   ;; Github like git info in dired
   (use-package dired-git-info
     :bind (:map dired-mode-map
                 (")" . dired-git-info-mode)))
+#+end_src
+
+** Dirvish
+
+#+begin_src emacs-lisp
+  (use-package dirvish
+    :straight (dirvish :files (:defaults "extensions/*"))
+    :config
+    (dirvish-override-dired-mode))
 #+end_src
 
 ** Undo tree
@@ -599,8 +675,16 @@ Git info like github in dired
 #+begin_src emacs-lisp
   (use-package undo-tree
     :diminish
-    :init
-    (global-undo-tree-mode))
+    :config
+    (global-undo-tree-mode)
+    (setq undo-tree-visualizer-diff t)
+    (setq undo-tree-visualizer-timestamps t)
+    (setq undo-tree-auto-save-history nil)
+
+    (fset 'undo-auto-amalgamate 'ignore)
+    (setq undo-limit 6710886400)
+    (setq undo-strong-limit 100663296)
+    (setq undo-outer-limit 1006632960))
 #+end_src
 
 ** Hydra
@@ -683,9 +767,9 @@ Vertico for better completion system
     (completion-styles '(orderless basic))
     (orderless-matching-styles '(
                                  orderless-literal
+                                 orderless-regexp
                                  orderless-prefixes
                                  orderless-initialism
-                                 orderless-regexp
                                  orderless-flex
                                  ))
     :config
@@ -888,6 +972,9 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
   (use-package zenburn-theme)
   (use-package color-theme-sanityinc-tomorrow)
   (use-package afternoon-theme)
+  (use-package flatland-theme)
+  (use-package solarized-theme)
+  (use-package zeno-theme)
   (use-package dracula-theme)
   (use-package ef-themes)
   (use-package lambda-themes
@@ -896,7 +983,11 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
     (lambda-themes-set-italic-comments t)
     (lambda-themes-set-italic-keywords t)
     (lambda-themes-set-variable-pitch t))
-  (use-package doom-themes)
+  (use-package doom-themes
+    :config
+    (setq doom-themes-enable-bold t
+          doom-themes-enable-italic t)
+    (doom-themes-visual-bell-config))
   (use-package nordic-night-theme
     :straight (:type git :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
@@ -940,7 +1031,7 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
     (setq enable-recursive-minibuffers t)
     :config
     ;; Load the theme of your choice:
-    (load-theme 'doom-vibrant t))
+    (load-theme 'ef-dark t))
 #+end_src
 
 ** Tree-sitter
@@ -985,6 +1076,15 @@ Keymaps popups when you forget them.
     :diminish
     :config
     (which-key-mode))
+#+end_src
+
+** Xref
+
+#+begin_src emacs-lisp
+  (use-package xref
+    :straight (:type built-in)
+    :config
+    (setq xref-history-storage 'xref-window-local-history))
 #+end_src
 
 ** Flycheck
@@ -1144,6 +1244,8 @@ Pretty awesome lsp system.
 The auto-completion popup system that rocks 🤩
 #+begin_src emacs-lisp
   (use-package company
+    :init
+    (setq company-text-icons-add-background t)
     :custom
     (company-minimum-prefix-length 1)
     (company-abort-on-unique-match nil)
@@ -1153,6 +1255,7 @@ The auto-completion popup system that rocks 🤩
     (company-dabbrev-other-buffers nil)
     (company-dabbrev-downcase nil)
     (company-idle-delay 0.0)
+    (compan-tooltip-idle-delay 0.1)
     (company-backends '(company-capf company-yasnippet company-files))
     (company-text-icons-add-background t)
     (company-format-margin-function #'company-text-icons-margin)
@@ -1160,6 +1263,14 @@ The auto-completion popup system that rocks 🤩
     (company-tooltip-minimum 8)
     :config
     (global-company-mode))
+#+end_src
+
+*** Company-quickhelp
+
+#+begin_src emacs-lisp
+  (use-package company-quickhelp
+    :disabled t
+    :hook company-mode)
 #+end_src
 
 *** Company-posframe frontend
@@ -1171,10 +1282,13 @@ The auto-completion popup system that rocks 🤩
 
 *** Company-box frontend
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package company-box
-    :custom
-    (company-box-frame-behavior 'point)
+    :disabled t
+    :straight (company-box :type git
+                           :host github
+                           :repo "sebastiencs/company-box"
+                           :branch "master")
     :hook (company-mode . company-box-mode))
 #+end_src
 
