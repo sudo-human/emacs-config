@@ -9,10 +9,19 @@
 
 (setq warning-minimum-level :emergency)
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-12"))
-(set-face-attribute 'default nil :font "JetBrains Mono-12")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-12")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-12")
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (if (boundp 'after-focus-change-function)
+                (add-function :after after-focus-change-function
+                              (lambda ()
+                                (unless (frame-focus-state)
+                                  (garbage-collect))))
+              (add-hook 'after-focus-change-function 'garbage-collect))))
+
+(add-to-list 'default-frame-alist '(font . "Agave-13"))
+(set-face-attribute 'default nil :font "Agave-13")
+(set-face-attribute 'fixed-pitch nil :font "Agave-13")
+(set-face-attribute 'variable-pitch nil :font "Agave-13")
 
 (setq-default
  visual-bell t
@@ -21,8 +30,12 @@
  set-mark-command-repeat-pop t
  vc-follow-symlinks t)
 
+(setq confirm-kill-emacs 'y-or-n-p)
+
 (setq display-line-numbers-type 'relative
       display-line-numbers-width-start t
+      use-dialog-box nil
+      make-pointer-invisible t
       load-prefer-newer t
       max-lisp-eval-depth 10000
       max-specpdl-size 10000
@@ -41,6 +54,25 @@
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 (load custom-file t)
+
+(defun scroll-up-half ()
+  (interactive)
+  (scroll-up-command
+   (floor
+    (- (window-height)
+       next-screen-context-lines)
+    2)))
+
+(defun scroll-down-half ()
+  (interactive)
+  (scroll-down-command
+   (floor
+    (- (window-height)
+       next-screen-context-lines)
+    2)))
+
+(global-set-key [remap scroll-up-command] 'scroll-up-half)
+(global-set-key [remap scroll-down-command] 'scroll-down-half)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -69,6 +101,7 @@
 (electric-pair-mode 1)
 (context-menu-mode t)
 (blink-cursor-mode -1)
+(winner-mode 1)
 ;; (tool-bar-mode -1)
 ;; (menu-bar-mode -1)
 ;; (scroll-bar-mode -1)
@@ -96,7 +129,108 @@
              (format "[%s] " project-name))))
         "%b"))
 
+(use-package general)
+
 (use-package all-the-icons)
+
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-undo-system 'undo-tree)
+  (setq evil-want-minibuffer t)
+  (setq evil-kill-on-visual-paste nil)
+  (setq evil-respect-visual-line-mode nil)
+  (setq evil-symbol-word-search t)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-winodw-right t)
+  (setq evil-visual-state-cursor 'hollow)
+  :config
+  (evil-mode t)
+  ;; (defalias #'forward-evil-word #'forward-evil-symbol)
+  (evil-set-leader nil (kbd "SPC"))
+  (evil-set-leader 'insert (kbd "C-SPC"))
+  (evil-set-leader nil (kbd "SPC"))
+  (evil-global-set-key 'motion (kbd "SPC") nil)
+  (evil-global-set-key 'motion (kbd "RET") nil)
+  ;; Enable/disable certain jump targets for C-o and C-i
+  (evil-set-command-property 'evil-visual-char :jump t)
+  (evil-set-command-property 'evil-visual-line :jump t)
+  (evil-set-command-property 'evil-backward-paragraph :jump nil)
+  (evil-set-command-property 'evil-forward-paragraph :jump nil)
+  (evil-set-command-property 'evil-search-next :jump nil)
+  (evil-set-command-property 'evil-search-previous :jump nil)
+
+  ;; Up/Down on visual instead of actual lines
+  (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
+  (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line))
+
+;; Evil leader
+(use-package evil-leader
+  :straight t
+  :after evil
+  :config
+  (global-evil-leader-mode)
+  (evil-leader/set-leader "<SPC>"))
+
+(use-package evil-commentary
+  :straight t
+  :config (evil-commentary-mode))
+
+(use-package evil-goggles
+  :after evil
+  :hook evil-mode
+  :custom
+  (evil-goggles-pulse nil)
+  (evil-goggles-duration 0.1)
+  :config
+  (evil-goggles-mode)
+  (evil-goggles-use-diff-faces))
+
+(use-package evil-surround
+  :defer 1
+  :straight t
+  :config (global-evil-surround-mode 1))
+
+(use-package evil-lion
+  :straight t
+  :config
+  (setq evil-lion-left-align-key (kbd "g a"))
+  (setq evil-lion-right-align-key (kbd "g A"))
+  (evil-lion-mode))
+
+(use-package evil-matchit
+  :straight t
+  :disabled
+  :config
+  (global-evil-matchit-mode 1))
+
+;; Evil text objects
+(use-package evil-textobj-line :straight t :defer 1)
+(use-package evil-textobj-syntax :straight t :defer 1)
+(use-package evil-indent-plus
+  :straight t
+  :defer 1
+  :config
+  (define-key evil-inner-text-objects-map "i" 'evil-indent-plus-i-indent)
+  (define-key evil-outer-text-objects-map "i" 'evil-indent-plus-a-indent)
+  (define-key evil-inner-text-objects-map "I" 'evil-indent-plus-i-indent-up)
+  (define-key evil-outer-text-objects-map "I" 'evil-indent-plus-a-indent-up)
+  (define-key evil-inner-text-objects-map "J" 'evil-indent-plus-i-indent-up-down)
+  (define-key evil-outer-text-objects-map "J" 'evil-indent-plus-a-indent-up-down))
+
+(use-package evil-collection
+  :straight t
+  :after evil
+  :init
+  (setq evil-collection-setup-minibuffer t)
+  :config
+  (setq evil-collection-magit-want-horizontal-movement t)
+  (setq evil-collection-magit-use-y-for-yank t)
+  (evil-collection-init))
 
 (use-package org
   :mode ("\\.org$" . org-mode)
@@ -106,8 +240,9 @@
 
 (use-package doom-modeline
   :ensure t
-  :custom
-  (doom-modeline-vcs-max-length 30)
+  :init
+  (setq doom-modeline-vcs-max-length 30
+        doom-modeline-buffer-modification-icon nil)
   :hook (after-init . doom-modeline-mode))
 
 (use-package harpoon
@@ -125,7 +260,10 @@
               ("1" . harpoon-go-to-1)
               ("2" . harpoon-go-to-2)
               ("3" . harpoon-go-to-3)
-              ("4" . harpoon-go-to-4))
+              ("4" . harpoon-go-to-4)
+              ("8" . harpoon-go-to-5)
+              ("9" . harpoon-go-to-6)
+              ("0" . harpoon-go-to-7))
   :config
   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 
@@ -177,6 +315,10 @@
                 (mode 16 16 :left :elide)
                 " " project-file-relative))))
 
+(general-def ctl-x-map
+  "C-b" nil
+  "B" 'ibuffer-jump)
+
 (use-package hl-todo
   :straight t
   :defer 1
@@ -189,17 +331,13 @@
                                 ("XXX" . "#AF0494")))
   (global-hl-todo-mode))
 
-;; (use-package smartparens
-;;   :diminish
-;;   :config
-;;   (sp-use-smartparens-bindings)
-;;   (smartparens-global-mode))
-
 (use-package avy
   :custom
-  (avy-timeout-seconds 0.2)
+  (avy-timeout-seconds 0.4)
   :bind
-  ("M-j" . avy-goto-char-timer))
+  ("M-j" . avy-goto-char-timer)
+  ("M-n" . avy-goto-line-below)
+  ("M-p" . avy-goto-line-above))
 
 (use-package display-fill-column-indicator
   :straight (:type built-in)
@@ -255,22 +393,23 @@
    ("C-M-<" . mc/skip-to-previous-like-this)
    ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
-(use-package dired
-  :straight (:type built-in)
-  :custom
-  (dired-kill-when-opening-new-dired-buffer t)
+(use-package dirvish
+  :straight (dirvish :files (:defaults "extensions/*"))
   :config
-  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
-
-;; Github like git info in dired
-(use-package dired-git-info
-  :bind (:map dired-mode-map
-              (")" . dired-git-info-mode)))
+  (dirvish-override-dired-mode))
 
 (use-package undo-tree
   :diminish
-  :init
-  (global-undo-tree-mode))
+  :config
+  (global-undo-tree-mode)
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t)
+  (setq undo-tree-auto-save-history nil)
+
+  (fset 'undo-auto-amalgamate 'ignore)
+  (setq undo-limit 6710886400)
+  (setq undo-strong-limit 100663296)
+  (setq undo-outer-limit 1006632960))
 
 (use-package hydra)
 
@@ -335,9 +474,9 @@
   (completion-styles '(orderless basic))
   (orderless-matching-styles '(
                                orderless-literal
+                               orderless-regexp
                                orderless-prefixes
                                orderless-initialism
-                               orderless-regexp
                                orderless-flex
                                ))
   :config
@@ -522,6 +661,9 @@ orderless."
 (use-package zenburn-theme)
 (use-package color-theme-sanityinc-tomorrow)
 (use-package afternoon-theme)
+(use-package flatland-theme)
+(use-package solarized-theme)
+(use-package zeno-theme)
 (use-package dracula-theme)
 (use-package ef-themes)
 (use-package lambda-themes
@@ -530,7 +672,11 @@ orderless."
   (lambda-themes-set-italic-comments t)
   (lambda-themes-set-italic-keywords t)
   (lambda-themes-set-variable-pitch t))
-(use-package doom-themes)
+(use-package doom-themes
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (doom-themes-visual-bell-config))
 (use-package nordic-night-theme
   :straight (:type git :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
@@ -574,7 +720,7 @@ orderless."
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-vibrant t))
+  (load-theme 'ef-dark t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
@@ -604,6 +750,11 @@ orderless."
   :diminish
   :config
   (which-key-mode))
+
+(use-package xref
+  :straight (:type built-in)
+  :config
+  (setq xref-history-storage 'xref-window-local-history))
 
 (use-package flycheck)
 (use-package consult-flycheck)
@@ -695,6 +846,8 @@ orderless."
   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
   (use-package consult-lsp)
+  (general-def lsp-mode-map
+    [remap xref-find-apropos] 'consult-lsp-symbols)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
 (use-package lsp-ui
@@ -730,6 +883,8 @@ orderless."
   :after yasnippet)
 
 (use-package company
+  :init
+  (setq company-text-icons-add-background t)
   :custom
   (company-minimum-prefix-length 1)
   (company-abort-on-unique-match nil)
@@ -739,6 +894,7 @@ orderless."
   (company-dabbrev-other-buffers nil)
   (company-dabbrev-downcase nil)
   (company-idle-delay 0.0)
+  (compan-tooltip-idle-delay 0.1)
   (company-backends '(company-capf company-yasnippet company-files))
   (company-text-icons-add-background t)
   (company-format-margin-function #'company-text-icons-margin)
@@ -747,8 +903,20 @@ orderless."
   :config
   (global-company-mode))
 
+(use-package company-quickhelp
+  :disabled t
+  :hook company-mode)
+
 ;; (use-package company-posframe
 ;;   :hook company-mode)
+
+(use-package company-box
+  :disabled t
+  :straight (company-box :type git
+                         :host github
+                         :repo "sebastiencs/company-box"
+                         :branch "master")
+  :hook (company-mode . company-box-mode))
 
 ;; (use-package corfu
 ;;   :straight (corfu :files (:defaults "extensions/*"))

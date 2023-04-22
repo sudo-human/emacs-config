@@ -3,6 +3,16 @@
 (setq native-comp-deferred-compilation-deny-list nil)
 (setq package-enable-at-startup nil)
 
+(setq ps/emacs-started nil)
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done))
+          (setq ps/emacs-started t))
+
 (setq gc-cons-threshold most-positive-fixnum gc-cons-percentage 0.6)
 (add-hook 'emacs-startup-hook
           (lambda ()

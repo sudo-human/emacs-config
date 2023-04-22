@@ -330,7 +330,7 @@ All the icons 🤩
 
 ** Evil
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package evil
     :straight t
     :init
@@ -338,12 +338,14 @@ All the icons 🤩
     (setq evil-want-keybinding nil)
     (setq evil-want-C-u-scroll t)
     (setq evil-undo-system 'undo-tree)
+    (setq evil-want-minibuffer t)
     (setq evil-kill-on-visual-paste nil)
     (setq evil-respect-visual-line-mode nil)
     (setq evil-symbol-word-search t)
     (setq evil-search-module 'evil-search)
     (setq evil-split-window-below t)
     (setq evil-vsplit-winodw-right t)
+    (setq evil-visual-state-cursor 'hollow)
     :config
     (evil-mode t)
     ;; (defalias #'forward-evil-word #'forward-evil-symbol)
@@ -421,6 +423,8 @@ All the icons 🤩
   (use-package evil-collection
     :straight t
     :after evil
+    :init
+    (setq evil-collection-setup-minibuffer t)
     :config
     (setq evil-collection-magit-want-horizontal-movement t)
     (setq evil-collection-magit-use-y-for-yank t)
@@ -466,7 +470,10 @@ All the icons 🤩
                 ("1" . harpoon-go-to-1)
                 ("2" . harpoon-go-to-2)
                 ("3" . harpoon-go-to-3)
-                ("4" . harpoon-go-to-4))
+                ("4" . harpoon-go-to-4)
+                ("8" . harpoon-go-to-5)
+                ("9" . harpoon-go-to-6)
+                ("0" . harpoon-go-to-7))
     :config
     (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 #+end_src
@@ -563,9 +570,11 @@ All the icons 🤩
 #+begin_src emacs-lisp
   (use-package avy
     :custom
-    (avy-timeout-seconds 0.2)
+    (avy-timeout-seconds 0.4)
     :bind
-    ("M-j" . avy-goto-char-timer))
+    ("M-j" . avy-goto-char-timer)
+    ("M-n" . avy-goto-line-below)
+    ("M-p" . avy-goto-line-above))
 #+end_src
 
 ** Fill Column Indicator
@@ -1196,6 +1205,8 @@ Pretty awesome lsp system.
     ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
 
     (use-package consult-lsp)
+    (general-def lsp-mode-map
+      [remap xref-find-apropos] 'consult-lsp-symbols)
     (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
 
   (use-package lsp-ui
