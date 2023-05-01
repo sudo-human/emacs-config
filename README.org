@@ -330,13 +330,14 @@ All the icons 🤩
 
 ** Evil
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package evil
     :straight t
     :init
     (setq evil-want-integration t)
     (setq evil-want-keybinding nil)
     (setq evil-want-C-u-scroll t)
+    (setq evil-want-Y-yank-to-eol t)
     (setq evil-undo-system 'undo-tree)
     (setq evil-want-minibuffer t)
     (setq evil-kill-on-visual-paste nil)
@@ -354,17 +355,31 @@ All the icons 🤩
     (evil-set-leader nil (kbd "SPC"))
     (evil-global-set-key 'motion (kbd "SPC") nil)
     (evil-global-set-key 'motion (kbd "RET") nil)
+
     ;; Enable/disable certain jump targets for C-o and C-i
     (evil-set-command-property 'evil-visual-char :jump t)
     (evil-set-command-property 'evil-visual-line :jump t)
-    (evil-set-command-property 'evil-backward-paragraph :jump nil)
-    (evil-set-command-property 'evil-forward-paragraph :jump nil)
-    (evil-set-command-property 'evil-search-next :jump nil)
-    (evil-set-command-property 'evil-search-previous :jump nil)
 
     ;; Up/Down on visual instead of actual lines
-    (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
-    (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line))
+    (general-def '(normal visual)
+      "j" 'evil-next-visual-line
+      "k" 'evil-previous-visual-line)
+
+    (general-create-definer my-leader-def
+    :keymaps 'override
+    :prefix "SPC"
+    :states '(normal motion emacs)))
+
+
+  (defun ps/escape-key ()
+    (interactive)
+    (evil-ex-nohighlight)
+    (keyboard-quit))
+
+  (general-def '(normal visual global)
+    [escape] #'ps/escape-key)
+
+  (my-leader-def "?" 'which-key-show-top-level)
 
   ;; Evil leader
   (use-package evil-leader
@@ -381,15 +396,12 @@ All the icons 🤩
   (use-package evil-goggles
     :after evil
     :hook evil-mode
-    :custom
-    (evil-goggles-pulse nil)
-    (evil-goggles-duration 0.1)
     :config
     (evil-goggles-mode)
     (evil-goggles-use-diff-faces))
 
   (use-package evil-surround
-    :defer 1
+    :hook evil-mode
     :straight t
     :config (global-evil-surround-mode 1))
 
@@ -399,6 +411,10 @@ All the icons 🤩
     (setq evil-lion-left-align-key (kbd "g a"))
     (setq evil-lion-right-align-key (kbd "g A"))
     (evil-lion-mode))
+
+  (use-package evil-quickscope
+    :hook (evil-mode . turn-on-evil-quickscope-mode))
+
 
   (use-package evil-matchit
     :straight t
@@ -725,7 +741,7 @@ Vertico for better completion system
                                   vertico-repeat
                                   vertico-reverse))
     :config
-    (setq vertico-count 13)
+    (setq vertico-count 12)
     (setq vertico-cycle t)
     (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
 
@@ -746,8 +762,7 @@ Vertico for better completion system
             (consult-buffer)
             (xref-find-references buffer)))
     (setq vertico-multiform-categories
-          '((file grid)
-            (consult-grep buffer))))
+          '((consult-grep buffer))))
 
   (use-package vertico-mouse
     :after vertico
@@ -840,7 +855,6 @@ Enable rich annotations using the Marginalia package
            ("C-M-#" . consult-register)
            ;; Other custom bindings
            ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-           ("<help> a" . consult-apropos)            ;; orig. apropos-command
            ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
            ;; M-g bindings (goto-map)
            ("M-g e" . consult-compile-error)
@@ -860,7 +874,6 @@ Enable rich annotations using the Marginalia package
            ("M-s r" . consult-ripgrep)
            ("M-s l" . consult-line)
            ("M-s L" . consult-line-multi)
-           ("M-s m" . consult-multi-occur)
            ("M-s k" . consult-keep-lines)
            ("M-s u" . consult-focus-lines)
            ;; Isearch integration
@@ -1295,7 +1308,7 @@ The auto-completion popup system that rocks 🤩
 
 #+begin_src emacs-lisp
   (use-package company-box
-    :disabled t
+    :disabled
     :straight (company-box :type git
                            :host github
                            :repo "sebastiencs/company-box"

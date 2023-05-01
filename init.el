@@ -133,105 +133,6 @@
 
 (use-package all-the-icons)
 
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-undo-system 'undo-tree)
-  (setq evil-want-minibuffer t)
-  (setq evil-kill-on-visual-paste nil)
-  (setq evil-respect-visual-line-mode nil)
-  (setq evil-symbol-word-search t)
-  (setq evil-search-module 'evil-search)
-  (setq evil-split-window-below t)
-  (setq evil-vsplit-winodw-right t)
-  (setq evil-visual-state-cursor 'hollow)
-  :config
-  (evil-mode t)
-  ;; (defalias #'forward-evil-word #'forward-evil-symbol)
-  (evil-set-leader nil (kbd "SPC"))
-  (evil-set-leader 'insert (kbd "C-SPC"))
-  (evil-set-leader nil (kbd "SPC"))
-  (evil-global-set-key 'motion (kbd "SPC") nil)
-  (evil-global-set-key 'motion (kbd "RET") nil)
-  ;; Enable/disable certain jump targets for C-o and C-i
-  (evil-set-command-property 'evil-visual-char :jump t)
-  (evil-set-command-property 'evil-visual-line :jump t)
-  (evil-set-command-property 'evil-backward-paragraph :jump nil)
-  (evil-set-command-property 'evil-forward-paragraph :jump nil)
-  (evil-set-command-property 'evil-search-next :jump nil)
-  (evil-set-command-property 'evil-search-previous :jump nil)
-
-  ;; Up/Down on visual instead of actual lines
-  (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
-  (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line))
-
-;; Evil leader
-(use-package evil-leader
-  :straight t
-  :after evil
-  :config
-  (global-evil-leader-mode)
-  (evil-leader/set-leader "<SPC>"))
-
-(use-package evil-commentary
-  :straight t
-  :config (evil-commentary-mode))
-
-(use-package evil-goggles
-  :after evil
-  :hook evil-mode
-  :custom
-  (evil-goggles-pulse nil)
-  (evil-goggles-duration 0.1)
-  :config
-  (evil-goggles-mode)
-  (evil-goggles-use-diff-faces))
-
-(use-package evil-surround
-  :defer 1
-  :straight t
-  :config (global-evil-surround-mode 1))
-
-(use-package evil-lion
-  :straight t
-  :config
-  (setq evil-lion-left-align-key (kbd "g a"))
-  (setq evil-lion-right-align-key (kbd "g A"))
-  (evil-lion-mode))
-
-(use-package evil-matchit
-  :straight t
-  :disabled
-  :config
-  (global-evil-matchit-mode 1))
-
-;; Evil text objects
-(use-package evil-textobj-line :straight t :defer 1)
-(use-package evil-textobj-syntax :straight t :defer 1)
-(use-package evil-indent-plus
-  :straight t
-  :defer 1
-  :config
-  (define-key evil-inner-text-objects-map "i" 'evil-indent-plus-i-indent)
-  (define-key evil-outer-text-objects-map "i" 'evil-indent-plus-a-indent)
-  (define-key evil-inner-text-objects-map "I" 'evil-indent-plus-i-indent-up)
-  (define-key evil-outer-text-objects-map "I" 'evil-indent-plus-a-indent-up)
-  (define-key evil-inner-text-objects-map "J" 'evil-indent-plus-i-indent-up-down)
-  (define-key evil-outer-text-objects-map "J" 'evil-indent-plus-a-indent-up-down))
-
-(use-package evil-collection
-  :straight t
-  :after evil
-  :init
-  (setq evil-collection-setup-minibuffer t)
-  :config
-  (setq evil-collection-magit-want-horizontal-movement t)
-  (setq evil-collection-magit-use-y-for-yank t)
-  (evil-collection-init))
-
 (use-package org
   :mode ("\\.org$" . org-mode)
   :config
@@ -428,7 +329,7 @@
                                 vertico-repeat
                                 vertico-reverse))
   :config
-  (setq vertico-count 13)
+  (setq vertico-count 12)
   (setq vertico-cycle t)
   (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
 
@@ -449,8 +350,7 @@
           (consult-buffer)
           (xref-find-references buffer)))
   (setq vertico-multiform-categories
-        '((file grid)
-          (consult-grep buffer))))
+        '((consult-grep buffer))))
 
 (use-package vertico-mouse
   :after vertico
@@ -529,7 +429,6 @@ orderless."
          ("C-M-#" . consult-register)
          ;; Other custom bindings
          ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-         ("<help> a" . consult-apropos)            ;; orig. apropos-command
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
@@ -549,7 +448,6 @@ orderless."
          ("M-s r" . consult-ripgrep)
          ("M-s l" . consult-line)
          ("M-s L" . consult-line-multi)
-         ("M-s m" . consult-multi-occur)
          ("M-s k" . consult-keep-lines)
          ("M-s u" . consult-focus-lines)
          ;; Isearch integration
@@ -911,7 +809,7 @@ orderless."
 ;;   :hook company-mode)
 
 (use-package company-box
-  :disabled t
+  :disabled
   :straight (company-box :type git
                          :host github
                          :repo "sebastiencs/company-box"
