@@ -47,8 +47,7 @@
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
       indicate-buffer-boundaries t
-      indicate-empty-lines t
-      find-program "fdfind")
+      indicate-empty-lines t)
 (setq custom-file
       (if (boundp 'server-socket-dir)
           (expand-file-name "custom.el" server-socket-dir)
@@ -73,6 +72,7 @@
 
 (global-set-key [remap scroll-up-command] 'scroll-up-half)
 (global-set-key [remap scroll-down-command] 'scroll-down-half)
+(global-set-key [remap zap-to-char] 'zap-up-to-char)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -315,7 +315,8 @@
 (use-package hydra)
 
 (use-package rainbow-delimiters
-  :hook prog-mode)
+  :straight t
+  :hook ((prog-mode . rainbow-delimiters-mode)))
 
 (use-package vertico
   :straight (vertico :files (:defaults "extensions/*")
@@ -771,7 +772,7 @@ orderless."
                             (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
-  :hook python-ts-mode)
+  :hook ((python-ts-mode . pyvenv-mode)))
 
 (use-package yasnippet
   :config
