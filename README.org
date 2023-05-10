@@ -330,7 +330,7 @@ All the icons 🤩
 
 ** Evil
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package evil
     :straight t
     :init
@@ -459,7 +459,7 @@ All the icons 🤩
 
 ** Modeline
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package doom-modeline
     :ensure t
     :init
@@ -1390,6 +1390,12 @@ The auto-completion popup system that rocks 🤩
   ;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   ;;   )
+#+end_src
+
+** Docker Tramp
+
+#+begin_src emacs-lisp
+  (use-package docker-tramp)
 #+end_src
 
 ** Copilot

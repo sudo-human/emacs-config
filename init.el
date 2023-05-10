@@ -133,18 +133,126 @@
 
 (use-package all-the-icons)
 
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-Y-yank-to-eol t)
+  (setq evil-undo-system 'undo-tree)
+  (setq evil-want-minibuffer t)
+  (setq evil-kill-on-visual-paste nil)
+  (setq evil-respect-visual-line-mode nil)
+  (setq evil-symbol-word-search t)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-winodw-right t)
+  (setq evil-visual-state-cursor 'hollow)
+  :config
+  (evil-mode t)
+  ;; (defalias #'forward-evil-word #'forward-evil-symbol)
+  (evil-set-leader nil (kbd "SPC"))
+  (evil-set-leader 'insert (kbd "C-SPC"))
+  (evil-set-leader nil (kbd "SPC"))
+  (evil-global-set-key 'motion (kbd "SPC") nil)
+  (evil-global-set-key 'motion (kbd "RET") nil)
+
+  ;; Enable/disable certain jump targets for C-o and C-i
+  (evil-set-command-property 'evil-visual-char :jump t)
+  (evil-set-command-property 'evil-visual-line :jump t)
+
+  ;; Up/Down on visual instead of actual lines
+  (general-def '(normal visual)
+    "j" 'evil-next-visual-line
+    "k" 'evil-previous-visual-line)
+
+  (general-create-definer my-leader-def
+  :keymaps 'override
+  :prefix "SPC"
+  :states '(normal motion emacs)))
+
+
+(defun ps/escape-key ()
+  (interactive)
+  (evil-ex-nohighlight)
+  (keyboard-quit))
+
+(general-def '(normal visual global)
+  [escape] #'ps/escape-key)
+
+(my-leader-def "?" 'which-key-show-top-level)
+
+;; Evil leader
+(use-package evil-leader
+  :straight t
+  :after evil
+  :config
+  (global-evil-leader-mode)
+  (evil-leader/set-leader "<SPC>"))
+
+(use-package evil-commentary
+  :straight t
+  :config (evil-commentary-mode))
+
+(use-package evil-goggles
+  :after evil
+  :hook evil-mode
+  :config
+  (evil-goggles-mode)
+  (evil-goggles-use-diff-faces))
+
+(use-package evil-surround
+  :hook evil-mode
+  :straight t
+  :config (global-evil-surround-mode 1))
+
+(use-package evil-lion
+  :straight t
+  :config
+  (setq evil-lion-left-align-key (kbd "g a"))
+  (setq evil-lion-right-align-key (kbd "g A"))
+  (evil-lion-mode))
+
+(use-package evil-quickscope
+  :hook (evil-mode . turn-on-evil-quickscope-mode))
+
+
+(use-package evil-matchit
+  :straight t
+  :disabled
+  :config
+  (global-evil-matchit-mode 1))
+
+;; Evil text objects
+(use-package evil-textobj-line :straight t :defer 1)
+(use-package evil-textobj-syntax :straight t :defer 1)
+(use-package evil-indent-plus
+  :straight t
+  :defer 1
+  :config
+  (define-key evil-inner-text-objects-map "i" 'evil-indent-plus-i-indent)
+  (define-key evil-outer-text-objects-map "i" 'evil-indent-plus-a-indent)
+  (define-key evil-inner-text-objects-map "I" 'evil-indent-plus-i-indent-up)
+  (define-key evil-outer-text-objects-map "I" 'evil-indent-plus-a-indent-up)
+  (define-key evil-inner-text-objects-map "J" 'evil-indent-plus-i-indent-up-down)
+  (define-key evil-outer-text-objects-map "J" 'evil-indent-plus-a-indent-up-down))
+
+(use-package evil-collection
+  :straight t
+  :after evil
+  :init
+  (setq evil-collection-setup-minibuffer t)
+  :config
+  (setq evil-collection-magit-want-horizontal-movement t)
+  (setq evil-collection-magit-use-y-for-yank t)
+  (evil-collection-init))
+
 (use-package org
   :mode ("\\.org$" . org-mode)
   :config
   (setq org-hide-emphasis-markers t)
   (add-hook 'org-mode-hook 'org-indent-mode))
-
-(use-package doom-modeline
-  :ensure t
-  :init
-  (setq doom-modeline-vcs-max-length 30
-        doom-modeline-buffer-modification-icon nil)
-  :hook (after-init . doom-modeline-mode))
 
 (use-package harpoon
   :straight t
@@ -880,6 +988,8 @@ orderless."
 ;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
 ;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
 ;;   )
+
+(use-package docker-tramp)
 
 (use-package copilot
   :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
