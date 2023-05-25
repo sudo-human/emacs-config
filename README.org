@@ -177,10 +177,10 @@ Some time has passed, and I still don’t know if there is any quantifiable adva
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "Agave-13"))
-  (set-face-attribute 'default nil :font "Agave-13")
-  (set-face-attribute 'fixed-pitch nil :font "Agave-13")
-  (set-face-attribute 'variable-pitch nil :font "Agave-13")
+  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+  (set-face-attribute 'default nil :font "JetBrains Mono-11")
+  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
+  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
 #+end_src
 
 ** Defaults
@@ -330,7 +330,7 @@ All the icons 🤩
 
 ** Evil
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package evil
     :straight t
     :init
@@ -1015,6 +1015,8 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
     :straight (:type git :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 
+  (use-package elune-theme)
+
   ;; Load Themes
   ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
 
@@ -1099,6 +1101,17 @@ Keymaps popups when you forget them.
     :diminish
     :config
     (which-key-mode))
+#+end_src
+
+** Indent Guides
+
+#+begin_src emacs-lisp
+  (use-package highlight-indent-guides
+    :disabled
+    :hook (prog-mode . highlight-indent-guides-mode)
+    :init
+    (setq highlight-indent-guides-method 'character
+          highlight-indent-guides-responsive 'stack))
 #+end_src
 
 ** Xref
@@ -1244,6 +1257,14 @@ Pretty awesome lsp system.
     :hook (python-ts-mode . (lambda ()
                               (require 'lsp-pyright)
                               (lsp-deferred))))  ; or lsp
+#+end_src
+
+*** Breadcrumb
+
+#+begin_src emacs-lisp :tangle no
+  (use-package breadcrumb
+    :straight (:type git :host github :repo "joaotavora/breadcrumb")
+    :hook (lsp-mode . breadcrumb-mode))
 #+end_src
 
 ** Pyvenv
