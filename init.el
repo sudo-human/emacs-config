@@ -660,6 +660,13 @@ orderless."
 (use-package flycheck)
 (use-package consult-flycheck)
 
+(flycheck-define-checker python-ruff
+  "A super fast python linter Ruff!!!"
+  :command ("ruff-lsp" source)
+  :error-patterns
+  ((error line-start (file-name) ":" line ": error :" (message) line-end))
+  :modes (python-ts-mode python-mode))
+
 (use-package flymake
   :disabled t
   :straight nil
@@ -730,21 +737,21 @@ orderless."
                   c++-ts-mode-hook))
     (add-hook mode 'lsp-deferred))
   ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  ;; (defvar-local my-flycheck-local-cache nil)
-  ;; (defun my-flycheck-local-checker-get (fn checker property)
-  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
-  ;;   ;; infinite loops.
-  ;;   (if (eq checker 'lsp)
-  ;;       (or (alist-get property my-flycheck-local-cache)
-  ;;           (funcall fn checker property))
-  ;;     (funcall fn checker property)))
-  ;; (advice-add 'flycheck-checker-get
-  ;;             :around 'my-flycheck-local-checker-get)
+  (defvar-local my-flycheck-local-cache nil)
+  (defun my-flycheck-local-checker-get (fn checker property)
+    ;; Only check the buffer local cache for the LSP checker, otherwise we get
+    ;; infinite loops.
+    (if (eq checker 'lsp)
+        (or (alist-get property my-flycheck-local-cache)
+            (funcall fn checker property))
+      (funcall fn checker property)))
+  (advice-add 'flycheck-checker-get
+              :around 'my-flycheck-local-checker-get)
 
-  ;; (add-hook 'lsp-managed-mode-hook
-  ;;           (lambda ()
-  ;;             (when (derived-mode-p 'python-ts-mode)
-  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-pylint)))))))
+  (add-hook 'lsp-managed-mode-hook
+            (lambda ()
+              (when (derived-mode-p 'python-ts-mode)
+                (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
   (use-package consult-lsp)
   (general-def lsp-mode-map
