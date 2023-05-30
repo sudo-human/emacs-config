@@ -655,6 +655,7 @@ orderless."
 (use-package xref
   :straight (:type built-in)
   :config
+  (add-hook 'xref-after-return-hook 'recenter)
   (setq xref-history-storage 'xref-window-local-history))
 
 (use-package flycheck)

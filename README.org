@@ -1120,7 +1120,9 @@ Keymaps popups when you forget them.
   (use-package xref
     :straight (:type built-in)
     :config
+    (add-hook 'xref-after-return-hook 'recenter)
     (setq xref-history-storage 'xref-window-local-history))
+
 #+end_src
 
 ** Flycheck
