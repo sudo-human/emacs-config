@@ -18,10 +18,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
-(set-face-attribute 'default nil :font "JetBrains Mono-11")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-13"))
+(set-face-attribute 'default nil :font "JetBrains Mono-13")
+(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-13")
+(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-13")
 
 (setq-default
  visual-bell t
@@ -614,7 +614,7 @@ orderless."
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'ef-dark t))
+  (load-theme 'solarized-dark t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
