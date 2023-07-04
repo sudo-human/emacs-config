@@ -23,17 +23,18 @@
 (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-13")
 (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-13")
 
-(setq-default
- visual-bell t
- read-process-output-max (* 3 1024 1024)
- indent-tabs-mode nil
- set-mark-command-repeat-pop t
- vc-follow-symlinks t)
+(setq-default visual-bell t
+              read-process-output-max (* 3 1024 1024)
+              indent-tabs-mode nil
+              set-mark-command-repeat-pop t
+              vc-follow-symlinks t
+              indicate-empty-lines t)
 
 (setq confirm-kill-emacs 'y-or-n-p)
 
 (setq display-line-numbers-type 'relative
       display-line-numbers-width-start t
+      delete-by-moving-to-trash t
       use-dialog-box nil
       make-pointer-invisible t
       load-prefer-newer t
@@ -46,8 +47,9 @@
       scroll-preserve-screen-position t
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
-      indicate-buffer-boundaries t
-      indicate-empty-lines t)
+      search-whitespace-regexp ".*?"
+      indicate-buffer-boundaries t)
+
 (setq custom-file
       (if (boundp 'server-socket-dir)
           (expand-file-name "custom.el" server-socket-dir)
@@ -102,6 +104,7 @@
 (context-menu-mode t)
 (blink-cursor-mode -1)
 (winner-mode 1)
+(delete-selection-mode 1)
 ;; (tool-bar-mode -1)
 ;; (menu-bar-mode -1)
 ;; (scroll-bar-mode -1)
@@ -138,6 +141,8 @@
   :config
   (setq org-hide-emphasis-markers t)
   (add-hook 'org-mode-hook 'org-indent-mode))
+
+(use-package sokoban)
 
 (use-package harpoon
   :straight t
@@ -238,9 +243,7 @@
   :hook
   (python-ts-mode . display-fill-column-indicator-mode)
   :init
-  (setq-default fill-column 100)
-  ;; (setq display-fill-column-indicator-character "|")
-  )
+  (setq-default fill-column 99))
 
 (use-package files
   :straight (:type built-in)
@@ -287,7 +290,24 @@
    ("C-M-<" . mc/skip-to-previous-like-this)
    ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
+(use-package dired
+  :straight (:type built-in)
+  :custom
+  (dired-kill-when-opening-new-dired-buffer t)
+  :config
+  (setq dired-dwim-target t)
+  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
+
+(use-package all-the-icons-dired
+  :hook ((dired-mode . all-the-icons-dired-mode)))
+
+;; Github like git info in dired
+(use-package dired-git-info
+  :bind (:map dired-mode-map
+              (")" . dired-git-info-mode)))
+
 (use-package dirvish
+  :disabled
   :straight (dirvish :files (:defaults "extensions/*"))
   :config
   (dirvish-override-dired-mode))
@@ -354,7 +374,13 @@
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :init
+  (setq savehist-additional-variables '(register-alist kill-ring))
   (savehist-mode))
+
+(defun ps/bookmark-save-no-prompt (&rest _)
+  (funcall 'bookmark-save))
+
+(advice-add 'bookmark-set-internal :after 'ps/bookmark-save-no-prompt)
 
 
 (use-package vertico-directory
@@ -362,18 +388,16 @@
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package orderless
-  :custom
-  (orderless-component-separator 'orderless-escapable-split-on-space)
-  ;; (completion-category-defaults nil)
-  (completion-styles '(orderless basic))
-  (orderless-matching-styles '(
-                               orderless-literal
-                               orderless-regexp
-                               orderless-prefixes
-                               orderless-initialism
-                               orderless-flex
-                               ))
   :config
+  (setq orderless-component-separator 'orderless-escapable-split-on-space
+        completion-category-defaults nil
+        completion-styles '(orderless basic)
+        orderless-matching-styles '(orderless-literal
+                                    orderless-regexp
+                                    orderless-prefixes
+                                    orderless-initialism
+                                    orderless-flex))
+
   (defun orderless-company-completion (fn &rest args)
     "Highlight company matches correctly, and try default completion styles before
 orderless."
@@ -480,6 +504,8 @@ orderless."
   ;; Configure other variables and modes in the :config section,
   ;; after lazily loading the package.
   :config
+  (push "^*" consult-buffer-filter)
+
   ;; Optionally configure preview. The default value
   ;; is 'any, such that any key triggers the preview.
   ;; (setq consult-preview-key 'any)
@@ -494,7 +520,7 @@ orderless."
    consult--source-bookmark consult--source-file-register
    consult--source-recent-file consult--source-project-recent-file
    :preview-key "M-."
-   :preview-key '(:debounce 0.4 any))
+   :preview-key '(:debounce 0.2 any))
 
   ;; Optionally configure the narrowing key.
   ;; Both < and C-+ work reasonably well.
@@ -551,7 +577,10 @@ orderless."
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package zenburn-theme)
+(use-package modus-themes)
 (use-package color-theme-sanityinc-tomorrow)
+(use-package color-theme-sanityinc-solarized
+  :straight (:type git :host github :repo "sudo-human/color-theme-sanityinc-solarized"))
 (use-package afternoon-theme)
 (use-package flatland-theme)
 (use-package solarized-theme)
@@ -614,7 +643,7 @@ orderless."
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'solarized-dark t))
+  (load-theme 'doom-dracula t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
@@ -668,55 +697,6 @@ orderless."
   ((error line-start (file-name) ":" line ": error :" (message) line-end))
   :modes (python-ts-mode python-mode))
 
-(use-package flymake
-  :disabled t
-  :straight nil
-  :config
-  (defhydra flymake-map (flymake-mode-map "C-c f")
-    "flymake"
-    ("n" flymake-goto-next-error "next-error")
-    ("p" flymake-goto-prev-error "prev-error")
-    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
-  :hook (prog-mode . flymake-mode))
-
-(use-package flymake-diagnostic-at-point
-  :disabled t
-  :hook flymake-mode
-  :custom
-  (flymake-diagnostic-at-point-timer-delay 0.8))
-
-(use-package eglot
-  :disabled t
-  :straight nil
-  :bind (("C-c l e" . eglot)
-         :map eglot-mode-map
-         ("C-c l r" . eglot-rename)
-         ("C-c l a" . eglot-code-actions)
-         ("C-c l f" . eglot-format))
-  :custom
-  (eglot-autoshutdown t)
-  :init
-  (which-key-add-key-based-replacements "C-c l" "eglot")
-  :config
-  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio"))))
-  ;; (setcdr (assq 'java-mode eglot-server-programs)
-  ;;         `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-  ;;        "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-  ;;    "-Dosgi.bundles.defaultStartLevel=4"
-  ;;    "-Declipse.product=org.eclipse.jdt.ls.core.product"
-  ;;    "-Dlog.level=ALL"
-  ;;    "-noverify"
-  ;;    "-Xmx1G"
-  ;;    "--add-modules=ALL-SYSTEM"
-  ;;    "--add-opens java.base/java.util=ALL-UNNAMED"
-  ;;    "--add-opens java.base/java.lang=ALL-UNNAMED"
-  ;;    "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-  ;;    "-configuration ./config_linux")))
-
-(use-package consult-eglot
-  :diabled t
-  :after (eglot consult))
-
 (use-package lsp-mode
   :custom
   (lsp-completion-provider :none)
@@ -725,11 +705,11 @@ orderless."
   :init
   (setq lsp-idle-delay 0
         lsp-signature-doc-lines 2)
-  ;; (defun my/lsp-mode-setup-completion ()
-  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-  ;;         '(orderless))) ;; Configure orderless
-  ;; :hook
-  ;; (lsp-completion-mode . my/lsp-mode-setup-completion)
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))) ;; Configure orderless
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion)
   :commands (lsp lsp-deferred)
   :config
   (dolist (mode '(c-ts-mode-hook
@@ -791,105 +771,81 @@ orderless."
 (use-package yasnippet-snippets
   :after yasnippet)
 
-(use-package company
-  :init
-  (setq company-text-icons-add-background t)
+(use-package corfu
+  :straight (corfu :files (:defaults "extensions/*"))
+  :general (:keymaps 'corfu-map
+                     "M-j" #'corfu-quick-jump)
+  ;; Optional customizations
   :custom
-  (company-minimum-prefix-length 1)
-  (company-abort-on-unique-match nil)
-  (company-show-quick-access t)
-  (company-selection-wrap-around t)
-  (company-tooltip-align-annotations t)
-  (company-dabbrev-other-buffers nil)
-  (company-dabbrev-downcase nil)
-  (company-idle-delay 0.0)
-  (compan-tooltip-idle-delay 0.1)
-  (company-backends '(company-capf company-yasnippet company-files))
-  (company-text-icons-add-background t)
-  (company-format-margin-function #'company-text-icons-margin)
-  (company-frontends '(company-pseudo-tooltip-frontend))
-  (company-tooltip-minimum 8)
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-prefix 1)
+  (corfu-auto-delay 0.0)
+  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+  (corfu-preview-current t)    ;; Disable current candidate preview
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
+  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+  (corfu-scroll-margin 3)        ;; Use scroll margin
+
+  ;; Enable Corfu only for certain modes.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
+
+  ;; Recommended: Enable Corfu globally.
+  ;; This is recommended since Dabbrev can be used globally (M-/).
+  ;; See also `corfu-excluded-modes'.
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode))
+
+(use-package emacs
+  :init
+  (setq completion-cycle-threshold nil)
+  ;; Emacs 28: Hide commands in M-x which do not apply to the current mode.
+  ;; Corfu commands are hidden, since they are not supposed to be used via M-x.
+  ;; (setq read-extended-command-predicate
+  ;;       #'command-completion-default-include-p)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (setq tab-always-indent 'complete))
+
+(use-package corfu-doc
+  :after corfu
+  :general (:keymaps 'corfu-map
+                     "M-d" #'corfu-doc-toggle
+                     "M-n" #'corfu-doc-scroll-up
+                     "M-p" #'corfu-doc-scroll-down))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
   :config
-  (global-company-mode))
-
-(use-package company-quickhelp
-  :disabled t
-  :hook company-mode)
-
-;; (use-package company-posframe
-;;   :hook company-mode)
-
-(use-package company-box
-  :disabled
-  :straight (company-box :type git
-                         :host github
-                         :repo "sebastiencs/company-box"
-                         :branch "master")
-  :hook (company-mode . company-box-mode))
-
-;; (use-package corfu
-;;   :straight (corfu :files (:defaults "extensions/*"))
-;;   :bind (:map corfu-map
-;;               ("M-j" . corfu-quick-complete))
-;;   ;; Optional customizations
-;;   :custom
-;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-;;   (corfu-auto t)                 ;; Enable auto completion
-;;   (corfu-auto-prefix 1)
-;;   (corfu-auto-delay 0.1)
-;;   (corfu-separator ?\s)          ;; Orderless field separator
-;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-;;   (corfu-preview-current t)    ;; Disable current candidate preview
-;;   (corfu-preselect-first nil)    ;; Disable candidate preselection
-;;   ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-;;   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-;;   (corfu-scroll-margin 5)        ;; Use scroll margin
-
-;;   ;; Enable Corfu only for certain modes.
-;;   ;; :hook ((prog-mode . corfu-mode)
-;;   ;;        (shell-mode . corfu-mode)
-;;   ;;        (eshell-mode . corfu-mode))
-
-;;   ;; Recommended: Enable Corfu globally.
-;;   ;; This is recommended since Dabbrev can be used globally (M-/).
-;;   ;; See also `corfu-excluded-modes'.
-;;   :init
-;;   (global-corfu-mode)
-;;   (corfu-history-mode))
-
-;; (use-package corfu-doc
-;;   :after corfu
-;;   :bind (:map corfu-map
-;;               ("M-d" . corfu-doc-toggle)
-;;               ("M-n" . corfu-doc-scroll-up)
-;;               ("M-p" . corfu-doc-scroll-down)))
-
-;; (use-package kind-icon
-;;   :after corfu
-;;   :custom
-;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 ;; ;; Add extensions
-;; (use-package cape
-;;   :hook corfu
-;;   :init
-;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
-;;   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-;;   (add-to-list 'completion-at-point-functions #'cape-file)
-;;   (add-to-list 'completion-at-point-functions #'cape-history)
-;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-;;   (add-to-list 'completion-at-point-functions #'cape-abbrev)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-;;   )
+(use-package cape
+  :hook corfu
+  :init
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  )
 
 (use-package docker-tramp)
 
@@ -946,6 +902,13 @@ cleared, make sure the overlay doesn't come back too soon."
   :mode ("\\.rest\\'". restclient-mode)
   :config (add-hook 'restclient-mode-hook (lambda ()
                                             (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
+
+(use-package ob-restclient)
+
+(use-package org
+  :config
+  (org-babel-do-load-languages 'org-babel-load-languages
+                               (append org-babel-load-languages '((restclient . t)))))
 
 (use-package proced
   :config

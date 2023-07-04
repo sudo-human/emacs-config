@@ -32,7 +32,7 @@
 (setq inhibit-compacting-font-caches t)
 
 ;; https://github.com/hlissner/doom-emacs/blob/58af4aef56469f3f495129b4e7d947553f420fca/core/core.el#L205
-(setq idle-update-delay 1.0)
+(setq idle-update-delay 0.5)
 
 ;; Don't want a mode line while loading init.
 (setq mode-line-format nil)
