@@ -177,10 +177,10 @@ Some time has passed, and I still don’t know if there is any quantifiable adva
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-13"))
-  (set-face-attribute 'default nil :font "JetBrains Mono-13")
-  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-13")
-  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-13")
+  (add-to-list 'default-frame-alist '(font . "Iosevka-13"))
+  (set-face-attribute 'default nil :font "Iosevka-13")
+  (set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
+  (set-face-attribute 'variable-pitch nil :font "Iosevka-13")
 #+end_src
 
 ** Defaults
@@ -450,6 +450,23 @@ All the icons 🤩
     (evil-collection-init))
 #+end_src
 
+** Move-Text
+
+#+begin_src emacs-lisp
+  (use-package move-text
+    :config
+    (move-text-default-bindings)
+    (defun indent-region-advice (&rest ignored)
+      (let ((deactivate deactivate-mark))
+        (if (region-active-p)
+            (indent-region (region-beginning) (region-end))
+          (indent-region (line-beginning-position) (line-end-position)))
+        (setq deactivate-mark deactivate)))
+
+    (advice-add 'move-text-up :after 'indent-region-advice)
+    (advice-add 'move-text-down :after 'indent-region-advice))
+#+end_src
+
 ** Org Mode
 
 #+begin_src emacs-lisp
@@ -458,6 +475,15 @@ All the icons 🤩
     :config
     (setq org-hide-emphasis-markers t)
     (add-hook 'org-mode-hook 'org-indent-mode))
+#+end_src
+
+** Jinx
+
+#+begin_src emacs-lisp
+  (use-package jinx
+    :hook (emacs-startup . global-jinx-mode)
+    :bind (("M-$" . jinx-correct)
+           ("C-M-$" . jinx-languages)))
 #+end_src
 
 ** Sokoban
@@ -1080,7 +1106,7 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
     (setq enable-recursive-minibuffers t)
     :config
     ;; Load the theme of your choice:
-    (load-theme 'doom-dracula t))
+    (load-theme 'ef-dark t))
 #+end_src
 
 ** Tree-sitter
@@ -1136,6 +1162,14 @@ Keymaps popups when you forget them.
     :init
     (setq highlight-indent-guides-method 'character
           highlight-indent-guides-responsive 'stack))
+#+end_src
+
+** Sly
+
+#+begin_src emacs-lisp
+  (use-package sly
+    :config
+    (setq inferior-lisp-program "ros -Q run"))
 #+end_src
 
 ** Xref
@@ -1559,6 +1593,12 @@ The auto-completion popup system that rocks 🤩
           vterm-max-scrollback 5000))
 #+end_src
 
+** EAT - Emulate a terminal
+
+#+begin_src emacs-lisp
+  (use-package eat)
+#+end_src
+
 ** Restclient
 
 Amazing REST API client!!!
@@ -1613,14 +1653,6 @@ Display sys-monitor when idle in the echo area
 ** Misc Code
 
 #+begin_src emacs-lisp
-  (defadvice kill-line (before kill-line-autoreindent activate)
-    "Kill excess whitespace when joining lines.
-  If the next line is joined to the current line, kill the extra indent whitespace in front of the next line."
-    (when (and (eolp) (not (bolp)))
-      (save-excursion
-        (forward-char 1)
-        (just-one-space 1))))
-
   (defadvice backward-kill-word (around delete-pair activate)
     (if (eq (char-syntax (char-before)) ?\()
         (progn

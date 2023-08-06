@@ -18,10 +18,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-13"))
-(set-face-attribute 'default nil :font "JetBrains Mono-13")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-13")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-13")
+(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
+(set-face-attribute 'default nil :font "Iosevka-13")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
+(set-face-attribute 'variable-pitch nil :font "Iosevka-13")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -136,11 +136,29 @@
 
 (use-package all-the-icons)
 
+(use-package move-text
+  :config
+  (move-text-default-bindings)
+  (defun indent-region-advice (&rest ignored)
+    (let ((deactivate deactivate-mark))
+      (if (region-active-p)
+          (indent-region (region-beginning) (region-end))
+        (indent-region (line-beginning-position) (line-end-position)))
+      (setq deactivate-mark deactivate)))
+
+  (advice-add 'move-text-up :after 'indent-region-advice)
+  (advice-add 'move-text-down :after 'indent-region-advice))
+
 (use-package org
   :mode ("\\.org$" . org-mode)
   :config
   (setq org-hide-emphasis-markers t)
   (add-hook 'org-mode-hook 'org-indent-mode))
+
+(use-package jinx
+  :hook (emacs-startup . global-jinx-mode)
+  :bind (("M-$" . jinx-correct)
+         ("C-M-$" . jinx-languages)))
 
 (use-package sokoban)
 
@@ -643,7 +661,7 @@ orderless."
   (setq enable-recursive-minibuffers t)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'doom-dracula t))
+  (load-theme 'ef-dark t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
@@ -680,6 +698,10 @@ orderless."
   :init
   (setq highlight-indent-guides-method 'character
         highlight-indent-guides-responsive 'stack))
+
+(use-package sly
+  :config
+  (setq inferior-lisp-program "ros -Q run"))
 
 (use-package xref
   :straight (:type built-in)
@@ -896,6 +918,8 @@ cleared, make sure the overlay doesn't come back too soon."
   (setq vterm-kill-buffer-on-exit t
         vterm-max-scrollback 5000))
 
+(use-package eat)
+
 (use-package restclient
   :straight t
   :defer t
@@ -922,14 +946,6 @@ cleared, make sure the overlay doesn't come back too soon."
   :disabled t
   :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
   :config (lemon-mode 1))
-
-(defadvice kill-line (before kill-line-autoreindent activate)
-  "Kill excess whitespace when joining lines.
-If the next line is joined to the current line, kill the extra indent whitespace in front of the next line."
-  (when (and (eolp) (not (bolp)))
-    (save-excursion
-      (forward-char 1)
-      (just-one-space 1))))
 
 (defadvice backward-kill-word (around delete-pair activate)
   (if (eq (char-syntax (char-before)) ?\()
