@@ -177,10 +177,10 @@ Some time has passed, and I still don’t know if there is any quantifiable adva
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "Iosevka-13"))
-  (set-face-attribute 'default nil :font "Iosevka-13")
-  (set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
-  (set-face-attribute 'variable-pitch nil :font "Iosevka-13")
+  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+  (set-face-attribute 'default nil :font "JetBrains Mono-11")
+  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
+  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
 #+end_src
 
 ** Defaults
@@ -191,6 +191,8 @@ Some time has passed, and I still don’t know if there is any quantifiable adva
                 indent-tabs-mode nil
                 set-mark-command-repeat-pop t
                 vc-follow-symlinks t
+                grep-use-headings t
+                indicate-buffer-boundaries t
                 indicate-empty-lines t)
 
   (setq confirm-kill-emacs 'y-or-n-p)
@@ -285,6 +287,7 @@ Change the =user-emacs-directory= to keep unwanted things out of ~/.emacs.d
   (context-menu-mode t)
   (blink-cursor-mode -1)
   (winner-mode 1)
+  (repeat-mode)
   (delete-selection-mode 1)
   ;; (tool-bar-mode -1)
   ;; (menu-bar-mode -1)
@@ -492,9 +495,15 @@ All the icons 🤩
   (use-package sokoban)
 #+end_src
 
+** Nerd Icons
+
+#+begin_src emacs-lisp
+  (use-package nerd-icons)
+#+end_src
+
 ** Modeline
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package doom-modeline
     :ensure t
     :init
@@ -682,6 +691,8 @@ All the icons 🤩
   (use-package bug-hunter)
   (use-package restart-emacs)
   (use-package free-keys)
+
+  (use-package typit)
 #+end_src
 
 ** Multiple Cursors
@@ -1042,6 +1053,8 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
   (use-package zenburn-theme)
   (use-package modus-themes)
   (use-package color-theme-sanityinc-tomorrow)
+  (use-package nezburn
+    :straight (:host github :repo "lanjoni/nezburn"))
   (use-package color-theme-sanityinc-solarized
     :straight (:type git :host github :repo "sudo-human/color-theme-sanityinc-solarized"))
   (use-package afternoon-theme)
@@ -1066,6 +1079,7 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 
   (use-package elune-theme)
+  (use-package gruber-darker-theme)
 
   ;; Load Themes
   ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -1112,7 +1126,7 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
 ** Tree-sitter
 
 Use inbuilt treesitter if =emacs-version= > 29
-#+begin_src emacs-lisp
+#+begin_src elisp
   (if (not (version<= emacs-version "29.0"))
       (use-package treesit-auto
         :demand t
@@ -1128,6 +1142,23 @@ Use inbuilt treesitter if =emacs-version= > 29
            :source-dir "src"))
         (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
         (global-treesit-auto-mode)))
+
+  ;; (setq treesit-language-source-alist
+  ;;    '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+  ;;      (cmake "https://github.com/uyha/tree-sitter-cmake")
+  ;;      (css "https://github.com/tree-sitter/tree-sitter-css")
+  ;;      (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+  ;;      (go "https://github.com/tree-sitter/tree-sitter-go")
+  ;;      (html "https://github.com/tree-sitter/tree-sitter-html")
+  ;;      (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+  ;;      (json "https://github.com/tree-sitter/tree-sitter-json")
+  ;;      (make "https://github.com/alemuller/tree-sitter-make")
+  ;;      (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+  ;;      (python "https://github.com/tree-sitter/tree-sitter-python")
+  ;;      (toml "https://github.com/tree-sitter/tree-sitter-toml")
+  ;;      (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+  ;;      (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+  ;;      (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 #+end_src
 
 ** Helpful
@@ -1155,13 +1186,16 @@ Keymaps popups when you forget them.
 
 ** Indent Guides
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package highlight-indent-guides
-    :disabled
     :hook (prog-mode . highlight-indent-guides-mode)
     :init
-    (setq highlight-indent-guides-method 'character
-          highlight-indent-guides-responsive 'stack))
+    (setq highlight-indent-guides-method 'fill
+          highlight-indent-guides-auto-enabled nil
+          highlight-indent-guides-responsive 'stack)
+    (set-face-background 'highlight-indent-guides-odd-face "darkgray")
+    (set-face-background 'highlight-indent-guides-even-face "dimgray")
+    (set-face-foreground 'highlight-indent-guides-character-face "dimgray"))
 #+end_src
 
 ** Sly
@@ -1570,9 +1604,20 @@ The auto-completion popup system that rocks 🤩
     (magit-auto-revert-mode t))
 #+end_src
 
-** Git-gutter
+** Diff-hl
 
 #+begin_src emacs-lisp
+  (use-package diff-hl
+    :hook ((dired-mode . diff-hl-dired-mode))
+    :init
+    (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+    (global-diff-hl-mode t)
+    (diff-hl-flydiff-mode t))
+#+end_src
+
+** Git-gutter
+
+#+begin_src emacs-lisp :tangle no
   (use-package git-gutter-fringe
     :diminish
     :config
@@ -1621,6 +1666,15 @@ Org Babel support for restclient-mode
                                  (append org-babel-load-languages '((restclient . t)))))
 
 #+END_SRC
+
+** BigQuery
+
+#+begin_src emacs-lisp
+  (use-package sql-indent)
+
+  (use-package bigquery-mode
+    :straight (:host github :repo "christophstockhusen/bigquery-mode"))
+#+end_src
 
 ** Proced
 

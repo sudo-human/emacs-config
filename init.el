@@ -18,16 +18,18 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
-(set-face-attribute 'default nil :font "Iosevka-13")
-(set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
-(set-face-attribute 'variable-pitch nil :font "Iosevka-13")
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+(set-face-attribute 'default nil :font "JetBrains Mono-11")
+(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
+(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
               indent-tabs-mode nil
               set-mark-command-repeat-pop t
               vc-follow-symlinks t
+              grep-use-headings t
+              indicate-buffer-boundaries t
               indicate-empty-lines t)
 
 (setq confirm-kill-emacs 'y-or-n-p)
@@ -104,6 +106,7 @@
 (context-menu-mode t)
 (blink-cursor-mode -1)
 (winner-mode 1)
+(repeat-mode)
 (delete-selection-mode 1)
 ;; (tool-bar-mode -1)
 ;; (menu-bar-mode -1)
@@ -161,6 +164,15 @@
          ("C-M-$" . jinx-languages)))
 
 (use-package sokoban)
+
+(use-package nerd-icons)
+
+(use-package doom-modeline
+  :ensure t
+  :init
+  (setq doom-modeline-vcs-max-length 30
+        doom-modeline-buffer-modification-icon nil)
+  :hook (after-init . doom-modeline-mode))
 
 (use-package harpoon
   :straight t
@@ -296,6 +308,8 @@
 (use-package bug-hunter)
 (use-package restart-emacs)
 (use-package free-keys)
+
+(use-package typit)
 
 (use-package multiple-cursors
   :custom
@@ -597,6 +611,8 @@ orderless."
 (use-package zenburn-theme)
 (use-package modus-themes)
 (use-package color-theme-sanityinc-tomorrow)
+(use-package nezburn
+  :straight (:host github :repo "lanjoni/nezburn"))
 (use-package color-theme-sanityinc-solarized
   :straight (:type git :host github :repo "sudo-human/color-theme-sanityinc-solarized"))
 (use-package afternoon-theme)
@@ -621,6 +637,7 @@ orderless."
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 
 (use-package elune-theme)
+(use-package gruber-darker-theme)
 
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -679,6 +696,23 @@ orderless."
       (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
       (global-treesit-auto-mode)))
 
+;; (setq treesit-language-source-alist
+;;    '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+;;      (cmake "https://github.com/uyha/tree-sitter-cmake")
+;;      (css "https://github.com/tree-sitter/tree-sitter-css")
+;;      (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+;;      (go "https://github.com/tree-sitter/tree-sitter-go")
+;;      (html "https://github.com/tree-sitter/tree-sitter-html")
+;;      (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+;;      (json "https://github.com/tree-sitter/tree-sitter-json")
+;;      (make "https://github.com/alemuller/tree-sitter-make")
+;;      (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+;;      (python "https://github.com/tree-sitter/tree-sitter-python")
+;;      (toml "https://github.com/tree-sitter/tree-sitter-toml")
+;;      (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+;;      (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+;;      (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
 (use-package helpful
   :bind
   ([remap describe-function] . helpful-callable)
@@ -691,13 +725,6 @@ orderless."
   :diminish
   :config
   (which-key-mode))
-
-(use-package highlight-indent-guides
-  :disabled
-  :hook (prog-mode . highlight-indent-guides-mode)
-  :init
-  (setq highlight-indent-guides-method 'character
-        highlight-indent-guides-responsive 'stack))
 
 (use-package sly
   :config
@@ -903,15 +930,12 @@ cleared, make sure the overlay doesn't come back too soon."
   :config
   (magit-auto-revert-mode t))
 
-(use-package git-gutter-fringe
-  :diminish
-  :config
-  (setq git-gutter:update-interval 0.1)
-  (global-git-gutter-mode)
-  (diminish 'git-gutter-mode " GG")
-  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom))
+(use-package diff-hl
+  :hook ((dired-mode . diff-hl-dired-mode))
+  :init
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (global-diff-hl-mode t)
+  (diff-hl-flydiff-mode t))
 
 (use-package vterm
   :config
@@ -933,6 +957,11 @@ cleared, make sure the overlay doesn't come back too soon."
   :config
   (org-babel-do-load-languages 'org-babel-load-languages
                                (append org-babel-load-languages '((restclient . t)))))
+
+(use-package sql-indent)
+
+(use-package bigquery-mode
+  :straight (:host github :repo "christophstockhusen/bigquery-mode"))
 
 (use-package proced
   :config
