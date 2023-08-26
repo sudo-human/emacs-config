@@ -482,7 +482,7 @@ orderless."
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -736,79 +736,54 @@ orderless."
   (add-hook 'xref-after-return-hook 'recenter)
   (setq xref-history-storage 'xref-window-local-history))
 
-(use-package flycheck)
-(use-package consult-flycheck)
-
-(flycheck-define-checker python-ruff
-  "A super fast python linter Ruff!!!"
-  :command ("ruff-lsp" source)
-  :error-patterns
-  ((error line-start (file-name) ":" line ": error :" (message) line-end))
-  :modes (python-ts-mode python-mode))
-
-(use-package lsp-mode
-  :custom
-  (lsp-completion-provider :none)
-  (lsp-file-watch-threshold 100000)
-  (lsp-keymap-prefix "C-c l")
-  :init
-  (setq lsp-idle-delay 0
-        lsp-signature-doc-lines 2)
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion)
-  :commands (lsp lsp-deferred)
+(use-package flymake
+  ;; :disabled t
+  :straight nil
   :config
-  (dolist (mode '(c-ts-mode-hook
-                  js-ts-mode-hook
-                  typescript-ts-mode-hook
-                  c++-ts-mode-hook))
-    (add-hook mode 'lsp-deferred))
-  ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  (defvar-local my-flycheck-local-cache nil)
-  (defun my-flycheck-local-checker-get (fn checker property)
-    ;; Only check the buffer local cache for the LSP checker, otherwise we get
-    ;; infinite loops.
-    (if (eq checker 'lsp)
-        (or (alist-get property my-flycheck-local-cache)
-            (funcall fn checker property))
-      (funcall fn checker property)))
-  (advice-add 'flycheck-checker-get
-              :around 'my-flycheck-local-checker-get)
+  (defhydra flymake-map (flymake-mode-map "C-c f")
+    "flymake"
+    ("n" flymake-goto-next-error "next-error")
+    ("p" flymake-goto-prev-error "prev-error")
+    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
+  :hook (prog-mode . flymake-mode))
 
-  (add-hook 'lsp-managed-mode-hook
-            (lambda ()
-              (when (derived-mode-p 'python-ts-mode)
-                (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
-
-  (use-package consult-lsp)
-  (general-def lsp-mode-map
-    [remap xref-find-apropos] 'consult-lsp-symbols)
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
-
-(use-package lsp-ui
-  :after lsp-mode
+(use-package flymake-diagnostic-at-point
+  :disabled t
+  :hook flymake-mode
   :custom
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-peek-enable nil)
-  (lsp-headerline-breadcrumb-enable nil))
+  (flymake-diagnostic-at-point-timer-delay 0.8))
 
-(use-package dap-mode)
-(use-package lsp-treemacs)
-
-(use-package lsp-java
-  :hook (java-ts-mode . lsp-deferred))
-
-(use-package lsp-pyright
+(use-package eglot
+  :straight nil
+  :bind (("C-c l e" . eglot)
+         :map eglot-mode-map
+         ("C-c l r" . eglot-rename)
+         ("C-c l a" . eglot-code-actions)
+         ("C-c l f" . eglot-format))
+  :custom
+  (eglot-autoshutdown t)
+  (eglot-events-buffer-size 0)
   :init
-  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-  (setq lsp-pyright-multi-root nil
-        lsp-pyright-typechecking-mode "off")
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp-deferred))))  ; or lsp
+  (which-key-add-key-based-replacements "C-c l" "eglot")
+  :config
+  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio"))))
+  ;; (setcdr (assq 'java-mode eglot-server-programs)
+  ;;         `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
+  ;;        "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+  ;;    "-Dosgi.bundles.defaultStartLevel=4"
+  ;;    "-Declipse.product=org.eclipse.jdt.ls.core.product"
+  ;;    "-Dlog.level=ALL"
+  ;;    "-noverify"
+  ;;    "-Xmx1G"
+  ;;    "--add-modules=ALL-SYSTEM"
+  ;;    "--add-opens java.base/java.util=ALL-UNNAMED"
+  ;;    "--add-opens java.base/java.lang=ALL-UNNAMED"
+  ;;    "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
+  ;;    "-configuration ./config_linux")))
+
+(use-package consult-eglot
+  ;; :diabled t
+  :after (eglot consult))
 
 (use-package pyvenv
   :hook ((python-ts-mode . pyvenv-mode)))
@@ -942,7 +917,14 @@ cleared, make sure the overlay doesn't come back too soon."
   (setq vterm-kill-buffer-on-exit t
         vterm-max-scrollback 5000))
 
-(use-package eat)
+(use-package eat
+  :straight (:type git :host codeberg
+                   :repo "akib/emacs-eat"
+                   :files ("*.el" ("term" "term/*.el") "*.texi"
+                           "*.ti" ("terminfo/e" "terminfo/e/*")
+                           ("terminfo/65" "terminfo/65/*")
+                           ("integration" "integration/*")
+                           (:exclude ".dir-locals.el" "*-tests.el"))))
 
 (use-package restclient
   :straight t

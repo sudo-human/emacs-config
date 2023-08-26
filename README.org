@@ -915,7 +915,7 @@ Enable rich annotations using the Marginalia package
            ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
            ;; M-g bindings (goto-map)
            ("M-g e" . consult-compile-error)
-           ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
+           ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
            ("M-g g" . consult-goto-line)             ;; orig. goto-line
            ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
            ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -1219,7 +1219,7 @@ Keymaps popups when you forget them.
 
 ** Flycheck
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package flycheck)
   (use-package consult-flycheck)
 
@@ -1233,7 +1233,7 @@ Keymaps popups when you forget them.
 
 ** Flymake
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package flymake
     ;; :disabled t
     :straight nil
@@ -1280,9 +1280,8 @@ Extracted from Lsp-UI
 *** Eglot
 
 The emacs built-in LSP. It's minimal and efficient. But I feel that lsp-mode is more feature rich, so I use that.
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (use-package eglot
-    ;; :disabled t
     :straight nil
     :bind (("C-c l e" . eglot)
            :map eglot-mode-map
@@ -1291,6 +1290,7 @@ The emacs built-in LSP. It's minimal and efficient. But I feel that lsp-mode is 
            ("C-c l f" . eglot-format))
     :custom
     (eglot-autoshutdown t)
+    (eglot-events-buffer-size 0)
     :init
     (which-key-add-key-based-replacements "C-c l" "eglot")
     :config
@@ -1317,7 +1317,7 @@ The emacs built-in LSP. It's minimal and efficient. But I feel that lsp-mode is 
 *** lsp-mode
 
 Pretty awesome lsp system.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (use-package lsp-mode
     :custom
     (lsp-completion-provider :none)
@@ -1641,7 +1641,14 @@ The auto-completion popup system that rocks 🤩
 ** EAT - Emulate a terminal
 
 #+begin_src emacs-lisp
-  (use-package eat)
+  (use-package eat
+    :straight (:type git :host codeberg
+                     :repo "akib/emacs-eat"
+                     :files ("*.el" ("term" "term/*.el") "*.texi"
+                             "*.ti" ("terminfo/e" "terminfo/e/*")
+                             ("terminfo/65" "terminfo/65/*")
+                             ("integration" "integration/*")
+                             (:exclude ".dir-locals.el" "*-tests.el"))))
 #+end_src
 
 ** Restclient
