@@ -18,10 +18,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
-(set-face-attribute 'default nil :font "JetBrains Mono-11")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
+(add-to-list 'default-frame-alist '(font . "Hack-11"))
+(set-face-attribute 'default nil :font "Hack-11")
+(set-face-attribute 'fixed-pitch nil :font "Hack-11")
+(set-face-attribute 'variable-pitch nil :font "Hack-11")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -49,6 +49,9 @@
       scroll-preserve-screen-position t
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
+      isearch-yank-on-move 'shift
+      isearch-allow-scroll 'unlimited
+      isearch-repeat-on-direction-change t
       search-whitespace-regexp ".*?"
       indicate-buffer-boundaries t)
 
@@ -168,11 +171,16 @@
 (use-package nerd-icons)
 
 (use-package doom-modeline
-  :ensure t
+  :disabled t
   :init
   (setq doom-modeline-vcs-max-length 30
         doom-modeline-buffer-modification-icon nil)
   :hook (after-init . doom-modeline-mode))
+
+(use-package timu-line
+  :disabled t
+  :straight (:host gitlab :repo "aimebertrand/timu-line")
+  :hook (after-init . timu-line-mode))
 
 (use-package harpoon
   :straight t
@@ -406,7 +414,9 @@
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :init
-  (setq savehist-additional-variables '(register-alist kill-ring))
+  (setq savehist-additional-variables '(register-alist kill-ring)
+        savehist-save-minibuffer-history t
+        history-delete-duplicates t)
   (savehist-mode))
 
 (defun ps/bookmark-save-no-prompt (&rest _)
@@ -551,7 +561,8 @@ orderless."
    consult-bookmark consult-recent-file consult-xref
    consult--source-bookmark consult--source-file-register
    consult--source-recent-file consult--source-project-recent-file
-   :preview-key "M-."
+   ;; :preview-key "M-."
+   :preview-key '(:debounce 0.4 any)
    :preview-key '(:debounce 0.2 any))
 
   ;; Optionally configure the narrowing key.
@@ -590,6 +601,10 @@ orderless."
   :commands (consult-git-log-grep)
   :custom
   (consult-git-log-grep-open-function #'magit-show-commit))
+
+(use-package consult-todo
+  :straight (:host github :repo "liuyinz/consult-todo")
+  :after (hl-todo consult))
 
 (use-package embark
   :bind
@@ -638,6 +653,11 @@ orderless."
 
 (use-package elune-theme)
 (use-package gruber-darker-theme)
+(use-package panda-theme)
+(use-package wildcharm-theme)
+(use-package wildcharm-light-theme)
+(use-package nimbus-theme)
+(use-package catppuccin-theme)
 
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -676,9 +696,11 @@ orderless."
 
   ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t)
+  (minibuffer-depth-indicate-mode 1)
+  (minibuffer-electric-default-mode 1)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'ef-dark t))
+  (load-theme 'nimbus t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
@@ -740,6 +762,7 @@ orderless."
   ;; :disabled t
   :straight nil
   :config
+  (setq flymake-show-diagnostics-at-end-of-line t)
   (defhydra flymake-map (flymake-mode-map "C-c f")
     "flymake"
     ("n" flymake-goto-next-error "next-error")
@@ -766,7 +789,11 @@ orderless."
   :init
   (which-key-add-key-based-replacements "C-c l" "eglot")
   :config
-  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio"))))
+  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio")))
+  (setq-default eglot-workspace-configuration
+		'((:pyright .
+			    ((typeCheckingMode . "off"))))))
+
   ;; (setcdr (assq 'java-mode eglot-server-programs)
   ;;         `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
   ;;        "-Declipse.application=org.eclipse.jdt.ls.core.id1"
@@ -794,6 +821,11 @@ orderless."
 
 (use-package yasnippet-snippets
   :after yasnippet)
+
+(use-package yasnippet-capf
+  :after cape
+  :config
+  (add-to-list 'completion-at-point-functions #'yasnippet-capf))
 
 (use-package corfu
   :straight (corfu :files (:defaults "extensions/*"))
@@ -912,6 +944,13 @@ cleared, make sure the overlay doesn't come back too soon."
   (global-diff-hl-mode t)
   (diff-hl-flydiff-mode t))
 
+(use-package eshell
+  :straight nil
+  :defer t
+  :general
+  (eshell-mode-map
+   "M-m" 'beginning-of-line))
+
 (use-package vterm
   :config
   (setq vterm-kill-buffer-on-exit t
@@ -996,3 +1035,20 @@ cleared, make sure the overlay doesn't come back too soon."
   "Indent the current buffer"
   (interactive)
   (indent-region (point-min) (point-max)))
+
+
+(defun ps/todo-file ()
+  "Open my TODO.org file"
+  (interactive)
+  (find-file "~/Documents/TODO.org"))
+
+
+(defun delete-this-file ()
+  "Delete file for current file buffer.  Does not prompt."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    (if (and filename (file-exists-p filename))
+        (progn
+          (delete-file filename t)
+          (message "Deleted file %s" filename))
+      (message "This buffer is not visiting an existing file."))))
