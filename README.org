@@ -177,10 +177,10 @@ Some time has passed, and I still don’t know if there is any quantifiable adva
 ** Font Settings
 
 #+begin_src emacs-lisp
-  (add-to-list 'default-frame-alist '(font . "Hack-11"))
-  (set-face-attribute 'default nil :font "Hack-11")
-  (set-face-attribute 'fixed-pitch nil :font "Hack-11")
-  (set-face-attribute 'variable-pitch nil :font "Hack-11")
+  (add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+  (set-face-attribute 'default nil :font "JetBrains Mono-11")
+  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
+  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
 #+end_src
 
 ** Defaults
@@ -856,8 +856,8 @@ Vertico for better completion system
   (use-package orderless
     :config
     (setq orderless-component-separator 'orderless-escapable-split-on-space
+          completion-styles '(basic substring initials flex orderless)
           completion-category-defaults nil
-          completion-styles '(orderless basic)
           orderless-matching-styles '(orderless-literal
                                       orderless-regexp
                                       orderless-prefixes
@@ -1065,6 +1065,10 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
 ** Theme Settings
 
 #+begin_src emacs-lisp
+  (use-package autothemer)
+  (use-package kanagawa-theme
+    :straight (:host github :repo "jasonm23/emacs-theme-kanagawa"))
+
   (use-package zenburn-theme)
   (use-package modus-themes)
   (use-package color-theme-sanityinc-tomorrow)
@@ -1099,7 +1103,8 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
   (use-package wildcharm-theme)
   (use-package wildcharm-light-theme)
   (use-package nimbus-theme)
-  (use-package catppuccin-theme)
+  (use-package catppuccin-theme
+    :straight (:host github :repo "jasonm23/emacs-theme-catpuccin"))
 
   ;; Load Themes
   ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -1142,7 +1147,7 @@ Embark is like the right click menu in GUIs, but since it's emacs you can do a t
     (minibuffer-electric-default-mode 1)
     :config
     ;; Load the theme of your choice:
-    (load-theme 'nimbus t))
+    (load-theme 'doom-solarized-dark-high-contrast t))
 #+end_src
 
 ** Tree-sitter
@@ -1260,7 +1265,7 @@ Keymaps popups when you forget them.
     ;; :disabled t
     :straight nil
     :config
-    (setq flymake-show-diagnostics-at-end-of-line t)
+    (setq flymake-show-diagnostics-at-end-of-line nil)
     (defhydra flymake-map (flymake-mode-map "C-c f")
       "flymake"
       ("n" flymake-goto-next-error "next-error")
@@ -1751,7 +1756,43 @@ Display sys-monitor when idle in the echo area
   (use-package lemon
     :disabled t
     :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
-    :config (lemon-mode 1))
+    :config
+    (setq lemon-delay 5)
+    (lemon-mode 1))
+#+end_src
+
+** MySQL
+
+#+begin_src emacs-lisp
+  (setq sql-connection-alist
+        '((local-db (sql-product 'mysql)
+                    (sql-user "root")
+                    (sql-password "9899")
+                    (sql-server "127.0.0.1")
+                    (sql-database "unittest_plutus_exchange")
+                    (sql-port 3306))
+          (stage-db (sql-product 'mysql)
+                    (sql-user "root")
+                    (sql-server "127.0.0.1")
+                    (sql-password "um8r3774C0R9")
+                    (sql-port 3307))))
+
+  (defun connect-to-database (label)
+    "Connect to the database associated with the given LABEL."
+    (interactive)
+    (let ((product (car (cdr (assoc label sql-connection-alist)))))
+      (setq sql-product product)
+      (sql-connect label)))
+
+  (defun ps/mysql-local ()
+    "Connect to local database."
+    (interactive)
+    (connect-to-database 'local-db))
+
+  (defun ps/mysql-stage ()
+    "Connect to stage database."
+    (interactive)
+    (connect-to-database 'stage-db))
 #+end_src
 
 ** Misc Code

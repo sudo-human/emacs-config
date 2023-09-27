@@ -18,10 +18,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Hack-11"))
-(set-face-attribute 'default nil :font "Hack-11")
-(set-face-attribute 'fixed-pitch nil :font "Hack-11")
-(set-face-attribute 'variable-pitch nil :font "Hack-11")
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
+(set-face-attribute 'default nil :font "JetBrains Mono-11")
+(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
+(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -432,8 +432,8 @@
 (use-package orderless
   :config
   (setq orderless-component-separator 'orderless-escapable-split-on-space
+        completion-styles '(basic substring initials flex orderless)
         completion-category-defaults nil
-        completion-styles '(orderless basic)
         orderless-matching-styles '(orderless-literal
                                     orderless-regexp
                                     orderless-prefixes
@@ -623,6 +623,10 @@ orderless."
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
+(use-package autothemer)
+(use-package kanagawa-theme
+  :straight (:host github :repo "jasonm23/emacs-theme-kanagawa"))
+
 (use-package zenburn-theme)
 (use-package modus-themes)
 (use-package color-theme-sanityinc-tomorrow)
@@ -657,7 +661,8 @@ orderless."
 (use-package wildcharm-theme)
 (use-package wildcharm-light-theme)
 (use-package nimbus-theme)
-(use-package catppuccin-theme)
+(use-package catppuccin-theme
+  :straight (:host github :repo "jasonm23/emacs-theme-catpuccin"))
 
 ;; Load Themes
 ;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
@@ -700,7 +705,7 @@ orderless."
   (minibuffer-electric-default-mode 1)
   :config
   ;; Load the theme of your choice:
-  (load-theme 'nimbus t))
+  (load-theme 'doom-solarized-dark-high-contrast t))
 
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
@@ -762,7 +767,7 @@ orderless."
   ;; :disabled t
   :straight nil
   :config
-  (setq flymake-show-diagnostics-at-end-of-line t)
+  (setq flymake-show-diagnostics-at-end-of-line nil)
   (defhydra flymake-map (flymake-mode-map "C-c f")
     "flymake"
     ("n" flymake-goto-next-error "next-error")
@@ -995,7 +1000,39 @@ cleared, make sure the overlay doesn't come back too soon."
 (use-package lemon
   :disabled t
   :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
-  :config (lemon-mode 1))
+  :config
+  (setq lemon-delay 5)
+  (lemon-mode 1))
+
+(setq sql-connection-alist
+      '((local-db (sql-product 'mysql)
+                  (sql-user "root")
+                  (sql-password "9899")
+                  (sql-server "127.0.0.1")
+                  (sql-database "unittest_plutus_exchange")
+                  (sql-port 3306))
+        (stage-db (sql-product 'mysql)
+                  (sql-user "root")
+                  (sql-server "127.0.0.1")
+                  (sql-password "um8r3774C0R9")
+                  (sql-port 3307))))
+
+(defun connect-to-database (label)
+  "Connect to the database associated with the given LABEL."
+  (interactive)
+  (let ((product (car (cdr (assoc label sql-connection-alist)))))
+    (setq sql-product product)
+    (sql-connect label)))
+
+(defun ps/mysql-local ()
+  "Connect to local database."
+  (interactive)
+  (connect-to-database 'local-db))
+
+(defun ps/mysql-stage ()
+  "Connect to stage database."
+  (interactive)
+  (connect-to-database 'stage-db))
 
 (defadvice backward-kill-word (around delete-pair activate)
   (if (eq (char-syntax (char-before)) ?\()
