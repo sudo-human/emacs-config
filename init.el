@@ -7,8 +7,6 @@
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
 
-(setq warning-minimum-level :emergency)
-
 (add-hook 'emacs-startup-hook
           (lambda ()
             (if (boundp 'after-focus-change-function)
@@ -32,9 +30,9 @@
               indicate-buffer-boundaries t
               indicate-empty-lines t)
 
-(setq confirm-kill-emacs 'y-or-n-p)
-
-(setq display-line-numbers-type 'relative
+(defalias 'yes-or-no-p 'y-or-n-p)
+(setq warning-minimum-level :emergency
+      display-line-numbers-type 'relative
       display-line-numbers-width-start t
       delete-by-moving-to-trash t
       use-dialog-box nil
@@ -53,13 +51,13 @@
       isearch-allow-scroll 'unlimited
       isearch-repeat-on-direction-change t
       search-whitespace-regexp ".*?"
-      indicate-buffer-boundaries t)
+      indicate-buffer-boundaries t
+      confirm-kill-emacs 'y-or-n-p)
 
 (setq custom-file
       (if (boundp 'server-socket-dir)
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
-(load custom-file t)
 
 (defun scroll-up-half ()
   (interactive)
@@ -81,28 +79,6 @@
 (global-set-key [remap scroll-down-command] 'scroll-down-half)
 (global-set-key [remap zap-to-char] 'zap-up-to-char)
 
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 6))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-(straight-use-package 'use-package)
-
-;; Configure use-package to use straight.el by default
-(use-package straight
-  :custom (straight-use-package-by-default t))
-
-(setq user-emacs-directory (expand-file-name "~/.local/share/emacs/")
-      url-history-file (expand-file-name "url/history" user-emacs-directory))
-
 (pixel-scroll-precision-mode t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (electric-pair-mode 1)
@@ -111,14 +87,9 @@
 (winner-mode 1)
 (repeat-mode)
 (delete-selection-mode 1)
-;; (tool-bar-mode -1)
-;; (menu-bar-mode -1)
-;; (scroll-bar-mode -1)
-(defalias 'yes-or-no-p 'y-or-n-p)
 (save-place-mode t)
 (recentf-mode t)
 (global-display-line-numbers-mode)
-;; (global-hl-line-mode)
 (global-auto-revert-mode 1)
 (make-variable-buffer-local 'global-hl-line-mode)
 (dolist (mode '(org-mode-hook
@@ -138,88 +109,104 @@
              (format "[%s] " project-name))))
         "%b"))
 
-(use-package general)
 
-(use-package all-the-icons)
+(defun ps/bookmark-save-no-prompt (&rest _)
+  (funcall 'bookmark-save))
+(advice-add 'bookmark-set-internal :after 'ps/bookmark-save-no-prompt)
 
-(use-package move-text
+
+(defvar elpaca-installer-version 0.5)
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                              :ref nil
+                              :files (:defaults (:exclude "extensions"))
+                              :build (:not elpaca--activate-package)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (when (< emacs-major-version 28) (require 'subr-x))
+    (condition-case-unless-debug err
+        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                 ((zerop (call-process "git" nil buffer t "clone"
+                                       (plist-get order :repo) repo)))
+                 ((zerop (call-process "git" nil buffer t "checkout"
+                                       (or (plist-get order :ref) "--"))))
+                 (emacs (concat invocation-directory invocation-name))
+                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                 ((require 'elpaca))
+                 ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (load "./elpaca-autoloads")))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
+
+;; Install use-package support
+(elpaca elpaca-use-package
+  ;; Enable :elpaca use-package keyword.
+  (elpaca-use-package-mode)
+  ;; Assume :elpaca t unless otherwise specified.
+  (setq elpaca-use-package-by-default t))
+(elpaca-wait)
+
+(use-package no-littering :demand t)
+(use-package general :demand t)
+(use-package diminish :demand t)
+(use-package delight :demand t)
+(use-package hydra)
+(elpaca-wait)
+
+
+(use-package popup :defer t)
+(use-package gcmh
+  :demand t
+  :diminish
   :config
-  (move-text-default-bindings)
-  (defun indent-region-advice (&rest ignored)
-    (let ((deactivate deactivate-mark))
-      (if (region-active-p)
-          (indent-region (region-beginning) (region-end))
-        (indent-region (line-beginning-position) (line-end-position)))
-      (setq deactivate-mark deactivate)))
+  (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold (* 100 1024 1024))
+  (gcmh-mode 1))
 
-  (advice-add 'move-text-up :after 'indent-region-advice)
-  (advice-add 'move-text-down :after 'indent-region-advice))
+(use-package bug-hunter :defer t)
+(use-package restart-emacs :defer t)
 
-(use-package org
-  :mode ("\\.org$" . org-mode)
+(use-package exec-path-from-shell
+  :demand t
   :config
-  (setq org-hide-emphasis-markers t)
-  (add-hook 'org-mode-hook 'org-indent-mode))
-
-(use-package jinx
-  :hook (emacs-startup . global-jinx-mode)
-  :bind (("M-$" . jinx-correct)
-         ("C-M-$" . jinx-languages)))
-
-(use-package sokoban)
-
-(use-package nerd-icons)
-
-(use-package doom-modeline
-  :disabled t
-  :init
-  (setq doom-modeline-vcs-max-length 30
-        doom-modeline-buffer-modification-icon nil)
-  :hook (after-init . doom-modeline-mode))
-
-(use-package timu-line
-  :disabled t
-  :straight (:host gitlab :repo "aimebertrand/timu-line")
-  :hook (after-init . timu-line-mode))
-
-(use-package harpoon
-  :straight t
-  :custom
-  (harpoon-project-package 'project)
-  :init
-  (define-prefix-command 'harpoon-map)
-  (global-set-key (kbd "C-'") 'harpoon-map)
-  :bind (:map harpoon-map
-              ("h" . harpoon-toggle-file)
-              ("'" . harpoon-add-file)
-              ("c" . harpoon-clear)
-              ("r" . harpoon-toggle-quick-menu)
-              ("1" . harpoon-go-to-1)
-              ("2" . harpoon-go-to-2)
-              ("3" . harpoon-go-to-3)
-              ("4" . harpoon-go-to-4)
-              ("8" . harpoon-go-to-5)
-              ("9" . harpoon-go-to-6)
-              ("0" . harpoon-go-to-7))
-  :config
-  (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
+  (when (memq window-system '(mac ns x pgtk))
+    (exec-path-from-shell-initialize)))
 
 (use-package project
-  :straight (:type built-in)
-  :bind (:map project-prefix-map
-              ("t" . project-todo))
+  :elpaca nil
+  :general (:keymaps 'project-prefix-map
+                     "t" 'project-todo)
   :config
   (defun project-todo ()
-  "Edit the TODO.org file at the root of the current project."
-  (interactive)
-  (let* ((base (ignore-errors (project-root (project-current))))
-         (todo (file-name-concat base "TODO.org")))
-    (cond ((and base (file-exists-p todo)) (find-file todo))
-          ((not base) (error "Not in a project"))
-          (t (error "Project does not contain a TODO.org file.")))))
+    "Edit the TODO.org file at the root of the current project."
+    (interactive)
+    (let* ((base (ignore-errors (project-root (project-current))))
+           (todo (file-name-concat base "TODO.org")))
+      (cond ((and base (file-exists-p todo)) (find-file todo))
+            ((not base) (error "Not in a project"))
+            (t (error "Project does not contain a TODO.org file.")))))
   (add-to-list 'project-switch-commands '(project-todo "Todo" "t")))
 
 (use-package ibuffer
+  :elpaca nil
+  :general
+  (:keymaps 'ctl-x-map
+            "C-b" nil
+            "B" 'ibuffer-jump)
   :config
   (define-ibuffer-column size
     (:name "Size"
@@ -252,182 +239,199 @@
                 (mode 16 16 :left :elide)
                 " " project-file-relative))))
 
-(general-def ctl-x-map
-  "C-b" nil
-  "B" 'ibuffer-jump)
-
-(use-package hl-todo
-  :straight t
-  :defer 1
-  :config
-  (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
-                                ("FIXME" . "#FF0000")
-                                ("GOTCHA" . "#FF4500")
-                                ("STUB" . "#1E90FF")
-                                ("NOTE" . "#0090FF")
-                                ("XXX" . "#AF0494")))
-  (global-hl-todo-mode))
-
-(use-package avy
-  :custom
-  (avy-timeout-seconds 0.4)
-  :bind
-  ("M-j" . avy-goto-char-timer)
-  ("M-n" . avy-goto-line-below)
-  ("M-p" . avy-goto-line-above))
-
-(use-package display-fill-column-indicator
-  :straight (:type built-in)
-  :hook
-  (python-ts-mode . display-fill-column-indicator-mode)
-  :init
-  (setq-default fill-column 99))
-
 (use-package files
-  :straight (:type built-in)
-  :custom
-  (backup-directory-alist '(("." . "~/.emacs.d/backups")))
-  (backup-by-copying t)               ; Always use copying to create backup files
-  (delete-old-versions t)             ; Delete excess backup versions
-  (kept-new-versions 6)               ; Number of newest versions to keep when a new backup is made
-  (kept-old-versions 2)               ; Number of oldest versions to keep when a new backup is made
-  (version-control t)                 ; Make numeric backup versions unconditionally
-  (auto-save-default nil)             ; Stop creating #autosave# files
-  (mode-require-final-newline nil)    ; Don't add newlines at the end of files
-  (large-file-warning-threshold nil)) ; Open large files without requesting confirmation
-
-(use-package files
-  :ensure nil
+  :elpaca nil
   :config
-  (setq confirm-kill-processes nil
+  (setq backup-directory-alist '(("." . "~/.emacs.d/backups"))
+        backup-by-copying t               ; Always use copying to create backup files
+        delete-old-versions t             ; Delete excess backup versions
+        kept-new-versions 6               ; Number of newest versions to keep when a new backup is made
+        kept-old-versions 2               ; Number of oldest versions to keep when a new backup is made
+        version-control t                 ; Make numeric backup versions unconditionally
+        auto-save-default nil             ; Stop creating #autosave# files
+        mode-require-final-newline nil    ; Don't add newlines at the end of files
+        large-file-warning-threshold nil ; Open large files without requesting confirmation
+        confirm-kill-processes nil
         create-lockfiles nil ; don't create .# files (crashes 'npm start')
         make-backup-files nil))
 
-(use-package no-littering)
-(use-package diminish)
-(use-package delight)
-(use-package popup)
-(use-package gcmh
-  :diminish
+(use-package xref
+  :elpaca nil
   :config
-  (setq gcmh-idle-delay 5
-        gcmh-high-cons-threshold (* 100 1024 1024))
-  (gcmh-mode 1))
-(use-package bug-hunter)
-(use-package restart-emacs)
-(use-package free-keys)
+  (add-hook 'xref-after-return-hook 'recenter)
+  (setq xref-history-storage 'xref-window-local-history))
 
-(use-package typit)
-
-(use-package multiple-cursors
-  :custom
-  (mc/always-run-for-all t)
-  :bind
-  (("C-*" . mc/edit-lines)
-   ("C->" . mc/mark-next-like-this)
-   ("C-<" . mc/mark-previous-like-this)
-   ("C-M->" . mc/skip-to-next-like-this)
-   ("C-M-<" . mc/skip-to-previous-like-this)
-   ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
+(use-package all-the-icons :defer t)
+(use-package nerd-icons :defer t)
 
 (use-package dired
-  :straight (:type built-in)
-  :custom
-  (dired-kill-when-opening-new-dired-buffer t)
+  :elpaca nil
   :config
-  (setq dired-dwim-target t)
+  (setq dired-dwim-target t
+        dired-kill-when-opening-new-dired-buffer t)
   (add-hook 'dired-mode-hook 'dired-hide-details-mode))
 
 (use-package all-the-icons-dired
-  :hook ((dired-mode . all-the-icons-dired-mode)))
-
-;; Github like git info in dired
-(use-package dired-git-info
-  :bind (:map dired-mode-map
-              (")" . dired-git-info-mode)))
-
-(use-package dirvish
-  :disabled
-  :straight (dirvish :files (:defaults "extensions/*"))
+  :after all-the-icons
   :config
-  (dirvish-override-dired-mode))
-
-(use-package undo-tree
-  :diminish
-  :config
-  (global-undo-tree-mode)
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t)
-  (setq undo-tree-auto-save-history nil)
-
-  (fset 'undo-auto-amalgamate 'ignore)
-  (setq undo-limit 6710886400)
-  (setq undo-strong-limit 100663296)
-  (setq undo-outer-limit 1006632960))
-
-(use-package hydra)
-
-(use-package rainbow-delimiters
-  :straight t
-  :hook ((prog-mode . rainbow-delimiters-mode)))
-
-(use-package vertico
-  :straight (vertico :files (:defaults "extensions/*")
-                     :includes (vertico-buffer
-                                vertico-multiform
-                                vertico-directory
-                                vertico-flat
-                                vertico-indexed
-                                vertico-mouse
-                                vertico-quick
-                                vertico-repeat
-                                vertico-reverse))
-  :config
-  (setq vertico-count 12)
-  (setq vertico-cycle t)
-  (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
-
-  (define-key vertico-map (kbd "M-n") 'vertico-next-group)
-  (define-key vertico-map (kbd "M-p") 'vertico-previous-group)
-
-  ;; Do not allow the cursor in the minibuffer prompt
-  ;; (setq minibuffer-prompt-properties
-  ;;       '(read-only t cursor-intangible t face minibuffer-prompt))
-  ;; (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-
-  (vertico-mode)
-  (vertico-multiform-mode)
-  (setq vertico-multiform-commands
-        '((consult-ripgrep buffer indexed)
-          (consult-xref buffer indexed)
-          (consult-imenu buffer)
-          (consult-buffer)
-          (xref-find-references buffer)))
-  (setq vertico-multiform-categories
-        '((consult-grep buffer))))
-
-(use-package vertico-mouse
-  :after vertico
-  :config
-  (vertico-mouse-mode))
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
 
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
+  :elpaca nil
   :init
   (setq savehist-additional-variables '(register-alist kill-ring)
         savehist-save-minibuffer-history t
         history-delete-duplicates t)
   (savehist-mode))
 
-(defun ps/bookmark-save-no-prompt (&rest _)
-  (funcall 'bookmark-save))
+(use-package avy
+  :general
+  ("M-j" 'avy-goto-char-timer)
+  ("M-n" 'avy-goto-line-below)
+  ("M-p" 'avy-goto-line-above)
+  :custom
+  (avy-timeout-seconds 0.3))
 
-(advice-add 'bookmark-set-internal :after 'ps/bookmark-save-no-prompt)
+(if (not (version<= emacs-version "29.0"))
+    (use-package treesit-auto
+      :demand t
+      :config
+      (setq treesit-auto-install 'prompt)
+      (setq my-js-tsauto-config
+        (make-treesit-auto-recipe
+         :lang 'javascript
+         :ts-mode 'js-ts-mode
+         :remap '(js2-mode js-mode javascript-mode)
+         :url "https://github.com/tree-sitter/tree-sitter-javascript"
+         :revision "master"
+         :source-dir "src"))
+      (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
+      (global-treesit-auto-mode)))
+
+(use-package autothemer)
+(use-package kanagawa-theme
+  :elpaca (:host github :repo "jasonm23/emacs-theme-kanagawa"))
+
+(use-package zenburn-theme)
+(use-package modus-themes
+  :config
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-subtle-line-numbers t
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-mode-line '(accented borderless)
+        ;; modus-themes-hl-line '(accented)
+        modus-themes-parens-match '(bold intense)))
+
+(use-package color-theme-sanityinc-tomorrow)
+(use-package nezburn
+  :elpaca (:host github :repo "lanjoni/nezburn"))
+(use-package color-theme-sanityinc-solarized
+  :elpaca (:host github :repo "sudo-human/color-theme-sanityinc-solarized"))
+(use-package afternoon-theme)
+(use-package flatland-theme)
+(use-package solarized-theme)
+(use-package zeno-theme)
+(use-package dracula-theme)
+(use-package ef-themes)
+(use-package lambda-themes
+  :elpaca (:host github :repo "lambda-emacs/lambda-themes")
+  :custom
+  (lambda-themes-set-italic-comments t)
+  (lambda-themes-set-italic-keywords t)
+  (lambda-themes-set-variable-pitch t))
+(use-package doom-themes
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (doom-themes-visual-bell-config))
+(use-package nordic-night-theme
+  :elpaca (:host github :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
+(use-package elune-theme)
+(use-package gruber-darker-theme)
+(use-package panda-theme)
+(use-package wildcharm-theme)
+(use-package wildcharm-light-theme)
+(use-package nimbus-theme)
+(use-package catppuccin-theme
+  :elpaca (:host github :repo "jasonm23/emacs-theme-catpuccin"))
 
 
-(use-package vertico-directory
-  :after vertico
-  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+(use-package emacs
+  :elpaca nil
+  :init
+  (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+  ;; Add all your customizations prior to loading the themes
+
+  (defadvice load-theme (before clear-previous-themes activate)
+    "Clear existing theme settings instead of layering them."
+    (mapc #'disable-theme custom-enabled-themes))
+
+  ;; Add prompt indicator to `completing-read-multiple'.
+  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+
+  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+  ;; Vertico commands are hidden in normal buffers.
+  (setq read-extended-command-predicate
+        #'command-completion-default-include-p)
+
+  ;; Enable recursive minibuffers
+  (setq enable-recursive-minibuffers t)
+  (minibuffer-depth-indicate-mode 1)
+  (minibuffer-electric-default-mode 1))
+
+(add-hook 'elpaca-after-init-hook (lambda ()
+                                    (load-theme 'doom-one t)
+                                    (load custom-file 'noerror)))
+
+(use-package move-text
+  :config
+  (move-text-default-bindings)
+  (defun indent-region-advice (&rest ignored)
+    (let ((deactivate deactivate-mark))
+      (if (region-active-p)
+          (indent-region (region-beginning) (region-end))
+        (indent-region (line-beginning-position) (line-end-position)))
+      (setq deactivate-mark deactivate)))
+
+  (advice-add 'move-text-up :after 'indent-region-advice)
+  (advice-add 'move-text-down :after 'indent-region-advice))
+
+(use-package harpoon
+  :custom
+  (harpoon-project-package 'project)
+  :init
+  (define-prefix-command 'harpoon-map)
+  (global-set-key (kbd "C-'") 'harpoon-map)
+  :general (:keymaps 'harpoon-map
+                     "h" 'harpoon-toggle-file
+                     "'" 'harpoon-add-file
+                     "c" 'harpoon-clear
+                     "r" 'harpoon-toggle-quick-menu
+                     "1" 'harpoon-go-to-1
+                     "2" 'harpoon-go-to-2
+                     "3" 'harpoon-go-to-3
+                     "4" 'harpoon-go-to-4
+                     "8" 'harpoon-go-to-5
+                     "9" 'harpoon-go-to-6
+                     "0" 'harpoon-go-to-7)
+  :config
+  (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
+
+(use-package rainbow-delimiters
+  :defer t
+  :hook ((prog-mode . rainbow-delimiters-mode)))
+
 
 (use-package orderless
   :config
@@ -457,18 +461,52 @@ orderless."
           (variable (styles orderless+basic))
           (file (styles basic partial-completion)))))
 
+(use-package vertico
+  :elpaca (vertico :files (:defaults "extensions/*")
+                   :includes (vertico-buffer
+                                  vertico-multiform
+                                  vertico-directory
+                                  vertico-flat
+                                  vertico-indexed
+                                  vertico-mouse
+                                  vertico-quick
+                                  vertico-repeat
+                                  vertico-reverse))
+  :config
+  (setq vertico-count 12)
+  (setq vertico-cycle t)
+  (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
+  (define-key vertico-map (kbd "M-n") 'vertico-next-group)
+  (define-key vertico-map (kbd "M-p") 'vertico-previous-group)
+
+  ;; Do not allow the cursor in the minibuffer prompt
+  ;; (setq minibuffer-prompt-properties
+  ;;       '(read-only t cursor-intangible t face minibuffer-prompt))
+  ;; (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+  (vertico-mode)
+  (vertico-multiform-mode)
+  (setq vertico-multiform-commands
+        '((consult-ripgrep buffer indexed)
+          (consult-xref buffer indexed)
+          (consult-imenu buffer)
+          (consult-buffer)
+          (xref-find-references buffer)))
+  (setq vertico-multiform-categories
+        '((consult-grep buffer))))
+
 (use-package marginalia
   ;; Either bind `marginalia-cycle' globally or only in the minibuffer
-  :bind (("M-A" . marginalia-cycle)
-         :map minibuffer-local-map
-         ("M-A" . marginalia-cycle))
-
+  :general ("M-A" 'marginalia-cycle)
+  (:keymaps 'minibuffer-local-map
+            "M-A" 'marginalia-cycle)
   ;; The :init configuration is always executed (Not lazy!)
   :init
 
   ;; Must be in the :init section of use-package such that the mode gets
   ;; enabled right away. Note that this forces loading the package.
   (marginalia-mode))
+
 
 (use-package consult
   ;; Replace bindings. Lazily loaded due by `use-package'.
@@ -492,7 +530,7 @@ orderless."
          ("<help> t" . consult-theme)             ;; orig. help-with-tutorial
          ;; M-g bindings (goto-map)
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -588,7 +626,6 @@ orderless."
   )
 
 (use-package consult-dir
-  :straight t
   :bind (("C-x C-d" . consult-dir)
          :map vertico-map
          ("C-x C-d" . consult-dir)
@@ -596,15 +633,18 @@ orderless."
   :after consult)
 
 (use-package consult-git-log-grep
-  :straight t
   :after consult
   :commands (consult-git-log-grep)
   :custom
   (consult-git-log-grep-open-function #'magit-show-commit))
 
 (use-package consult-todo
+  :defer t
   :straight (:host github :repo "liuyinz/consult-todo")
   :after (hl-todo consult))
+
+(use-package consult-flycheck
+  :after (consult flycheck))
 
 (use-package embark
   :bind
@@ -623,123 +663,6 @@ orderless."
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-(use-package autothemer)
-(use-package kanagawa-theme
-  :straight (:host github :repo "jasonm23/emacs-theme-kanagawa"))
-
-(use-package zenburn-theme)
-(use-package modus-themes)
-(use-package color-theme-sanityinc-tomorrow)
-(use-package nezburn
-  :straight (:host github :repo "lanjoni/nezburn"))
-(use-package color-theme-sanityinc-solarized
-  :straight (:type git :host github :repo "sudo-human/color-theme-sanityinc-solarized"))
-(use-package afternoon-theme)
-(use-package flatland-theme)
-(use-package solarized-theme)
-(use-package zeno-theme)
-(use-package dracula-theme)
-(use-package ef-themes)
-(use-package lambda-themes
-  :straight (:type git :host github :repo "lambda-emacs/lambda-themes")
-  :custom
-  (lambda-themes-set-italic-comments t)
-  (lambda-themes-set-italic-keywords t)
-  (lambda-themes-set-variable-pitch t))
-(use-package doom-themes
-  :config
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t)
-  (doom-themes-visual-bell-config))
-(use-package nordic-night-theme
-  :straight (:type git :repo "https://git.sr.ht/~ashton314/nordic-night" :branch "main"))
-(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-
-(use-package elune-theme)
-(use-package gruber-darker-theme)
-(use-package panda-theme)
-(use-package wildcharm-theme)
-(use-package wildcharm-light-theme)
-(use-package nimbus-theme)
-(use-package catppuccin-theme
-  :straight (:host github :repo "jasonm23/emacs-theme-catpuccin"))
-
-;; Load Themes
-;; (add-to-list 'custom-theme-load-path (concat user-emacs-directory "themes"))
-
-(defadvice load-theme (before clear-previous-themes activate)
-  "Clear existing theme settings instead of layering them."
-  (mapc #'disable-theme custom-enabled-themes))
-
-(use-package emacs
-  :init
-  ;; Add all your customizations prior to loading the themes
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-subtle-line-numbers t
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-mode-line '(accented borderless)
-        ;; modus-themes-hl-line '(accented)
-        modus-themes-parens-match '(bold intense))
-
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-
-  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  ;; Vertico commands are hidden in normal buffers.
-  ;; (setq read-extended-command-predicate
-  ;;       #'command-completion-default-include-p)
-
-  ;; Enable recursive minibuffers
-  (setq enable-recursive-minibuffers t)
-  (minibuffer-depth-indicate-mode 1)
-  (minibuffer-electric-default-mode 1)
-  :config
-  ;; Load the theme of your choice:
-  (load-theme 'doom-solarized-dark-high-contrast t))
-
-(if (not (version<= emacs-version "29.0"))
-    (use-package treesit-auto
-      :demand t
-      :config
-      (setq treesit-auto-install 'prompt)
-      (setq my-js-tsauto-config
-        (make-treesit-auto-recipe
-         :lang 'javascript
-         :ts-mode 'js-ts-mode
-         :remap '(js2-mode js-mode javascript-mode)
-         :url "https://github.com/tree-sitter/tree-sitter-javascript"
-         :revision "master"
-         :source-dir "src"))
-      (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
-      (global-treesit-auto-mode)))
-
-;; (setq treesit-language-source-alist
-;;    '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-;;      (cmake "https://github.com/uyha/tree-sitter-cmake")
-;;      (css "https://github.com/tree-sitter/tree-sitter-css")
-;;      (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-;;      (go "https://github.com/tree-sitter/tree-sitter-go")
-;;      (html "https://github.com/tree-sitter/tree-sitter-html")
-;;      (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-;;      (json "https://github.com/tree-sitter/tree-sitter-json")
-;;      (make "https://github.com/alemuller/tree-sitter-make")
-;;      (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-;;      (python "https://github.com/tree-sitter/tree-sitter-python")
-;;      (toml "https://github.com/tree-sitter/tree-sitter-toml")
-;;      (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-;;      (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-;;      (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
-
 (use-package helpful
   :bind
   ([remap describe-function] . helpful-callable)
@@ -753,69 +676,104 @@ orderless."
   :config
   (which-key-mode))
 
-(use-package sly
-  :config
-  (setq inferior-lisp-program "ros -Q run"))
 
-(use-package xref
-  :straight (:type built-in)
+(use-package hl-todo
+  :defer 1
   :config
-  (add-hook 'xref-after-return-hook 'recenter)
-  (setq xref-history-storage 'xref-window-local-history))
+  (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
+                                ("FIXME" . "#FF0000")
+                                ("GOTCHA" . "#FF4500")
+                                ("STUB" . "#1E90FF")
+                                ("NOTE" . "#0090FF")
+                                ("XXX" . "#AF0494")))
+  (global-hl-todo-mode))
 
-(use-package flymake
-  ;; :disabled t
-  :straight nil
-  :config
-  (setq flymake-show-diagnostics-at-end-of-line nil)
-  (defhydra flymake-map (flymake-mode-map "C-c f")
-    "flymake"
-    ("n" flymake-goto-next-error "next-error")
-    ("p" flymake-goto-prev-error "prev-error")
-    ("f" flymake-show-buffer-diagnostics "buffer diagnostics"))
-  :hook (prog-mode . flymake-mode))
-
-(use-package flymake-diagnostic-at-point
-  :disabled t
-  :hook flymake-mode
+(use-package multiple-cursors
   :custom
-  (flymake-diagnostic-at-point-timer-delay 0.8))
+  (mc/always-run-for-all t)
+  :bind
+  (("C-*" . mc/edit-lines)
+   ("C->" . mc/mark-next-like-this)
+   ("C-<" . mc/mark-previous-like-this)
+   ("C-M->" . mc/skip-to-next-like-this)
+   ("C-M-<" . mc/skip-to-previous-like-this)
+   ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
-(use-package eglot
-  :straight nil
-  :bind (("C-c l e" . eglot)
-         :map eglot-mode-map
-         ("C-c l r" . eglot-rename)
-         ("C-c l a" . eglot-code-actions)
-         ("C-c l f" . eglot-format))
+
+(use-package flycheck
+  :defer t
+  :config
+  (flycheck-define-checker python-ruff
+                           "A super fast python linter Ruff!!!"
+                           :command ("ruff-lsp" source)
+                           :error-patterns
+                           ((error line-start (file-name) ":" line ": error :" (message) line-end))
+                           :modes (python-ts-mode python-mode)))
+
+
+(use-package lsp-mode
   :custom
-  (eglot-autoshutdown t)
-  (eglot-events-buffer-size 0)
+  (lsp-completion-provider :none)
+  (lsp-file-watch-threshold 100000)
+  (lsp-keymap-prefix "C-c l")
   :init
-  (which-key-add-key-based-replacements "C-c l" "eglot")
+  (setq lsp-idle-delay 0
+        lsp-signature-doc-lines 2)
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))) ;; Configure orderless
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion)
+  :commands (lsp lsp-deferred)
   :config
-  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver" "--stdio")))
-  (setq-default eglot-workspace-configuration
-		'((:pyright .
-			    ((typeCheckingMode . "off"))))))
+  (dolist (mode '(c-ts-mode-hook
+                  js-ts-mode-hook
+                  typescript-ts-mode-hook
+                  c++-ts-mode-hook))
+    (add-hook mode 'lsp-deferred))
+  ;; Add buffer local Flycheck checkers after LSP for different major modes.
+  (defvar-local my-flycheck-local-cache nil)
+  (defun my-flycheck-local-checker-get (fn checker property)
+    ;; Only check the buffer local cache for the LSP checker, otherwise we get
+    ;; infinite loops.
+    (if (eq checker 'lsp)
+        (or (alist-get property my-flycheck-local-cache)
+            (funcall fn checker property))
+      (funcall fn checker property)))
+  (advice-add 'flycheck-checker-get
+              :around 'my-flycheck-local-checker-get)
 
-  ;; (setcdr (assq 'java-mode eglot-server-programs)
-  ;;         `("jdtls" "-data" "/home/pr09eek/.cache/emacs/workspace/"
-  ;;        "-Declipse.application=org.eclipse.jdt.ls.core.id1"
-  ;;    "-Dosgi.bundles.defaultStartLevel=4"
-  ;;    "-Declipse.product=org.eclipse.jdt.ls.core.product"
-  ;;    "-Dlog.level=ALL"
-  ;;    "-noverify"
-  ;;    "-Xmx1G"
-  ;;    "--add-modules=ALL-SYSTEM"
-  ;;    "--add-opens java.base/java.util=ALL-UNNAMED"
-  ;;    "--add-opens java.base/java.lang=ALL-UNNAMED"
-  ;;    "-jar ./plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar"
-  ;;    "-configuration ./config_linux")))
+  (add-hook 'lsp-managed-mode-hook
+            (lambda ()
+              (when (derived-mode-p 'python-ts-mode)
+                (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
-(use-package consult-eglot
-  ;; :diabled t
-  :after (eglot consult))
+  (use-package consult-lsp)
+  (general-def lsp-mode-map
+    [remap xref-find-apropos] 'consult-lsp-symbols)
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+
+(use-package lsp-ui
+  :after lsp-mode
+  :custom
+  (lsp-ui-doc-enable nil)
+  (lsp-ui-peek-enable nil)
+  (lsp-headerline-breadcrumb-enable nil))
+
+(use-package dap-mode)
+(use-package lsp-treemacs)
+
+(use-package lsp-java
+  :hook (java-ts-mode . lsp-deferred))
+
+(use-package lsp-pyright
+  :init
+  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+  (setq lsp-pyright-multi-root nil
+        lsp-pyright-typechecking-mode "off")
+  :hook (python-ts-mode . (lambda ()
+                            (require 'lsp-pyright)
+                            (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook ((python-ts-mode . pyvenv-mode)))
@@ -827,118 +785,30 @@ orderless."
 (use-package yasnippet-snippets
   :after yasnippet)
 
-(use-package yasnippet-capf
-  :after cape
-  :config
-  (add-to-list 'completion-at-point-functions #'yasnippet-capf))
 
-(use-package corfu
-  :straight (corfu :files (:defaults "extensions/*"))
-  :general (:keymaps 'corfu-map
-                     "M-j" #'corfu-quick-jump)
-  ;; Optional customizations
+(use-package company
+  :init
+  (setq company-text-icons-add-background t)
   :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-auto-prefix 1)
-  (corfu-auto-delay 0.0)
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-  (corfu-preview-current t)    ;; Disable current candidate preview
-  (corfu-preselect 'prompt)
-  (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
-  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-  (corfu-scroll-margin 3)        ;; Use scroll margin
-
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
-
-  ;; Recommended: Enable Corfu globally.
-  ;; This is recommended since Dabbrev can be used globally (M-/).
-  ;; See also `corfu-excluded-modes'.
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode))
-
-(use-package emacs
-  :init
-  (setq completion-cycle-threshold nil)
-  ;; Emacs 28: Hide commands in M-x which do not apply to the current mode.
-  ;; Corfu commands are hidden, since they are not supposed to be used via M-x.
-  ;; (setq read-extended-command-predicate
-  ;;       #'command-completion-default-include-p)
-
-  ;; Enable indentation+completion using the TAB key.
-  ;; `completion-at-point' is often bound to M-TAB.
-  (setq tab-always-indent 'complete))
-
-(use-package corfu-doc
-  :after corfu
-  :general (:keymaps 'corfu-map
-                     "M-d" #'corfu-doc-toggle
-                     "M-n" #'corfu-doc-scroll-up
-                     "M-p" #'corfu-doc-scroll-down))
-
-(use-package kind-icon
-  :after corfu
-  :custom
-  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+  (company-minimum-prefix-length 1)
+  (company-abort-on-unique-match nil)
+  (company-show-quick-access t)
+  (company-selection-wrap-around t)
+  (company-tooltip-align-annotations t)
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-downcase nil)
+  (company-idle-delay 0.0)
+  (compan-tooltip-idle-delay 0.1)
+  (company-backends '(company-capf company-files company-yasnippet))
+  (company-text-icons-add-background t)
+  (company-format-margin-function #'company-text-icons-margin)
+  (company-frontends '(company-pseudo-tooltip-frontend))
+  (company-tooltip-minimum 8)
   :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
-;; ;; Add extensions
-(use-package cape
-  :hook corfu
-  :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
-
-(use-package docker-tramp)
-
-(use-package copilot
-  :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
-  :disabled t
-  :hook (prog-mode . copilot-mode)
-  :config
-  (with-eval-after-load 'company
-    ;; disable inline previews
-    (delq 'company-preview-if-just-one-frontend company-frontends))
-
-  (define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
-  (define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)
-
-  (defun rk/copilot-quit ()
-    "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
-cleared, make sure the overlay doesn't come back too soon."
-    (interactive)
-    (condition-case err
-        (when copilot--overlay
-          (lexical-let ((pre-copilot-disable-predicates copilot-disable-predicates))
-                       (setq copilot-disable-predicates (list (lambda () t)))
-                       (copilot-clear-overlay)
-                       (run-with-idle-timer
-                        1.0
-                        nil
-                        (lambda ()
-                          (setq copilot-disable-predicates pre-copilot-disable-predicates)))))))
-  (advice-add 'keyboard-quit :before #'rk/copilot-quit))
+  (global-company-mode))
 
 (use-package magit
+  :defer t
   :config
   (magit-auto-revert-mode t))
 
@@ -950,19 +820,21 @@ cleared, make sure the overlay doesn't come back too soon."
   (diff-hl-flydiff-mode t))
 
 (use-package eshell
-  :straight nil
+  :elpaca nil
   :defer t
   :general
   (eshell-mode-map
    "M-m" 'beginning-of-line))
 
 (use-package vterm
+  :defer t
+  :commands vterm
   :config
   (setq vterm-kill-buffer-on-exit t
         vterm-max-scrollback 5000))
 
 (use-package eat
-  :straight (:type git :host codeberg
+  :elpaca (:type git :host codeberg
                    :repo "akib/emacs-eat"
                    :files ("*.el" ("term" "term/*.el") "*.texi"
                            "*.ti" ("terminfo/e" "terminfo/e/*")
@@ -970,26 +842,38 @@ cleared, make sure the overlay doesn't come back too soon."
                            ("integration" "integration/*")
                            (:exclude ".dir-locals.el" "*-tests.el"))))
 
+
 (use-package restclient
-  :straight t
   :defer t
   :mode ("\\.rest\\'". restclient-mode)
   :config (add-hook 'restclient-mode-hook (lambda ()
                                             (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
 
-(use-package ob-restclient)
+(use-package ob-restclient :after restclient)
+
+(use-package sly
+  :defer t
+  :config
+  (setq inferior-lisp-program "ros -Q run"))
+
+(use-package docker-tramp :defer t)
 
 (use-package org
+  :mode ("\\.org\\'" . org-mode)
   :config
+  (setq org-hide-emphasis-markers t)
+  (add-hook 'org-mode-hook 'org-indent-mode)
   (org-babel-do-load-languages 'org-babel-load-languages
                                (append org-babel-load-languages '((restclient . t)))))
+
 
 (use-package sql-indent)
 
 (use-package bigquery-mode
-  :straight (:host github :repo "christophstockhusen/bigquery-mode"))
+  :elpaca (:host github :repo "christophstockhusen/bigquery-mode"))
 
 (use-package proced
+  :elpaca nil
   :config
   (setq proced-enable-color-flag t))
 
@@ -997,13 +881,19 @@ cleared, make sure the overlay doesn't come back too soon."
   :config
   (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
 
+
 (use-package lemon
   :disabled t
-  :straight (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
+  :elpaca (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
   :config
   (setq lemon-delay 5)
   (lemon-mode 1))
 
+(use-package sokoban)
+(use-package typit)
+
+
+;; My code
 (setq sql-connection-alist
       '((local-db (sql-product 'mysql)
                   (sql-user "root")
