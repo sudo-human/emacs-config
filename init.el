@@ -95,6 +95,7 @@
 (dolist (mode '(org-mode-hook
                 term-mode-hook
                 vterm-mode-hook
+                eat-mode-hook
                 shell-mode-hook
                 eshell-mode-hook))
   (add-hook mode (lambda ()
