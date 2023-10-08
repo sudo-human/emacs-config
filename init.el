@@ -365,9 +365,9 @@
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
   ;; Add all your customizations prior to loading the themes
 
-  (defadvice load-theme (before clear-previous-themes activate)
-    "Clear existing theme settings instead of layering them."
-    (mapc #'disable-theme custom-enabled-themes))
+  ;; (defadvice load-theme (before clear-previous-themes activate)
+  ;;   "Clear existing theme settings instead of layering them."
+  ;;   (mapc #'disable-theme custom-enabled-themes))
 
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -925,20 +925,8 @@ orderless."
   (interactive)
   (connect-to-database 'stage-db))
 
-(defadvice backward-kill-word (around delete-pair activate)
-  (if (eq (char-syntax (char-before)) ?\()
-      (progn
-        (backward-char 1)
-        (save-excursion
-          (forward-sexp 1)
-          (delete-char -1))
-        (forward-char 1)
-        (append-next-kill)
-        (kill-backward-chars 1))
-    ad-do-it))
-
 ;; need to improve this
-(defun copy-line (arg)
+(defun ps/copy-line (arg)
   "Copy lines (as many as prefix argument) in the kill ring.
   Ease of use features:
     - Move to start of next line.
