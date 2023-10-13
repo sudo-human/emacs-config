@@ -28,10 +28,14 @@
               vc-follow-symlinks t
               grep-use-headings t
               indicate-buffer-boundaries t
+              scroll-preserve-screen-position 1
               indicate-empty-lines t)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 (setq warning-minimum-level :emergency
+      sentence-end-double-space nil
+      kill-whole-line t
+      jit-lock-defer-time 0
       display-line-numbers-type 'relative
       display-line-numbers-width-start t
       delete-by-moving-to-trash t
@@ -44,7 +48,6 @@
       auto-revert-check-vc-info t
       scroll-step 1
       scroll-conservatively 101
-      scroll-preserve-screen-position t
       save-interprogram-paste-before-kill t
       isearch-lazy-count t
       isearch-yank-on-move 'shift
@@ -79,9 +82,10 @@
 (global-set-key [remap scroll-down-command] 'scroll-down-half)
 (global-set-key [remap zap-to-char] 'zap-up-to-char)
 
-(pixel-scroll-precision-mode t)
+(pixel-scroll-precision-mode -1)
 (mouse-avoidance-mode 'cat-and-mouse)
 (electric-pair-mode 1)
+(kill-ring-deindent-mode 1)
 (context-menu-mode t)
 (blink-cursor-mode -1)
 (winner-mode 1)
@@ -192,6 +196,9 @@
   :general (:keymaps 'project-prefix-map
                      "t" 'project-todo)
   :config
+  (setq project-mode-line t
+        project-file-history-behavior 'relativize)
+
   (defun project-todo ()
     "Edit the TODO.org file at the root of the current project."
     (interactive)
@@ -647,6 +654,9 @@ orderless."
 (use-package consult-flycheck
   :after (consult flycheck))
 
+(use-package consult-lsp
+  :after (consult lsp))
+
 (use-package embark
   :bind
   (("C-," . embark-act)
@@ -702,7 +712,6 @@ orderless."
 
 
 (use-package flycheck
-  :defer t
   :config
   (flycheck-define-checker python-ruff
                            "A super fast python linter Ruff!!!"
@@ -713,16 +722,16 @@ orderless."
 
 
 (use-package lsp-mode
-  :custom
-  (lsp-completion-provider :none)
-  (lsp-file-watch-threshold 100000)
-  (lsp-keymap-prefix "C-c l")
   :init
   (setq lsp-idle-delay 0
-        lsp-signature-doc-lines 2)
+        lsp-completion-provider :none
+        lsp-file-watch-threshold 100000
+        lsp-keymap-prefix "C-c l")
+
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
           '(orderless))) ;; Configure orderless
+
   :hook
   (lsp-completion-mode . my/lsp-mode-setup-completion)
   :commands (lsp lsp-deferred)
@@ -749,7 +758,8 @@ orderless."
               (when (derived-mode-p 'python-ts-mode)
                 (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
-  (use-package consult-lsp)
+  (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+
   (general-def lsp-mode-map
     [remap xref-find-apropos] 'consult-lsp-symbols)
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -786,27 +796,97 @@ orderless."
 (use-package yasnippet-snippets
   :after yasnippet)
 
+(use-package corfu
+  :elpaca (corfu :files (:defaults "extensions/*"))
+  :general (:keymaps 'corfu-map
+                     "M-j" #'corfu-quick-jump
+                     "M-d" #'corfu-doc-toggle
+                     "M-n" #'corfu-doc-scroll-up
+                     "M-p" #'corfu-doc-scroll-down)
 
-(use-package company
-  :init
-  (setq company-text-icons-add-background t)
+  ;; Optional customizations
   :custom
-  (company-minimum-prefix-length 1)
-  (company-abort-on-unique-match nil)
-  (company-show-quick-access t)
-  (company-selection-wrap-around t)
-  (company-tooltip-align-annotations t)
-  (company-dabbrev-other-buffers nil)
-  (company-dabbrev-downcase nil)
-  (company-idle-delay 0.0)
-  (compan-tooltip-idle-delay 0.1)
-  (company-backends '(company-capf company-files company-yasnippet))
-  (company-text-icons-add-background t)
-  (company-format-margin-function #'company-text-icons-margin)
-  (company-frontends '(company-pseudo-tooltip-frontend))
-  (company-tooltip-minimum 8)
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-prefix 1)
+  (corfu-auto-delay 0.1)
+  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+  (corfu-preview-current t)    ;; Disable current candidate preview
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
+  (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+  (corfu-scroll-margin 3)        ;; Use scroll margin
+
+  ;; Enable Corfu only for certain modes.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
+
+  ;; Recommended: Enable Corfu globally.
+  ;; This is recommended since Dabbrev can be used globally (M-/).
+  ;; See also `corfu-excluded-modes'.
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode))
+
+(use-package emacs
+  :elpaca nil
+  :init
+  (setq completion-cycle-threshold nil)
+  
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (setq tab-always-indent 'complete))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
   :config
-  (global-company-mode))
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+
+(use-package cape
+  :hook corfu
+  :init
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  )
+
+
+;; (use-package company
+;;   :init
+;;   (setq company-text-icons-add-background t)
+;;   :custom
+;;   (company-minimum-prefix-length 1)
+;;   (company-abort-on-unique-match nil)
+;;   (company-show-quick-access t)
+;;   (company-selection-wrap-around t)
+;;   (company-tooltip-align-annotations t)
+;;   (company-dabbrev-other-buffers nil)
+;;   (company-dabbrev-downcase nil)
+;;   (company-idle-delay 0.0)
+;;   (compan-tooltip-idle-delay 0.1)
+;;   (company-backends '(company-capf company-files company-yasnippet))
+;;   (company-text-icons-add-background t)
+;;   (company-format-margin-function #'company-text-icons-margin)
+;;   (company-frontends '(company-pseudo-tooltip-frontend))
+;;   (company-tooltip-minimum 8)
+;;   :config
+;;   (global-company-mode))
 
 (use-package magit
   :defer t
@@ -819,6 +899,9 @@ orderless."
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode t)
   (diff-hl-flydiff-mode t))
+
+(use-package git-review
+  :elpaca (:repo "https://git.sr.ht/~niklaseklund/git-review"))
 
 (use-package eshell
   :elpaca nil
@@ -892,6 +975,7 @@ orderless."
 
 (use-package sokoban)
 (use-package typit)
+(use-package request)
 
 
 ;; My code
