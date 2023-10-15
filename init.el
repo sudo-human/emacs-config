@@ -399,7 +399,7 @@
   (minibuffer-electric-default-mode 1))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
-                                    (load-theme 'doom-one t)
+                                    (load-theme 'ef-trio-dark t)
                                     (load custom-file 'noerror)))
 
 (use-package move-text
