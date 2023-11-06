@@ -83,7 +83,7 @@
 (global-set-key [remap zap-to-char] 'zap-up-to-char)
 
 (pixel-scroll-precision-mode -1)
-(mouse-avoidance-mode 'cat-and-mouse)
+;; (mouse-avoidance-mode 'cat-and-mouse)
 (electric-pair-mode 1)
 (kill-ring-deindent-mode 1)
 (context-menu-mode t)
@@ -386,6 +386,10 @@
                   (car args))
           (cdr args)))
   (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
 
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -480,17 +484,16 @@ orderless."
                                   vertico-quick
                                   vertico-repeat
                                   vertico-reverse))
-  :config
-  (setq vertico-count 12)
-  (setq vertico-cycle t)
-  (define-key vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
-  (define-key vertico-map (kbd "M-n") 'vertico-next-group)
-  (define-key vertico-map (kbd "M-p") 'vertico-previous-group)
 
-  ;; Do not allow the cursor in the minibuffer prompt
-  ;; (setq minibuffer-prompt-properties
-  ;;       '(read-only t cursor-intangible t face minibuffer-prompt))
-  ;; (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+  :config
+  (general-def vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
+  (general-def vertico-map (kbd "M-n") 'vertico-next-group)
+  (general-def vertico-map (kbd "M-p") 'vertico-previous-group)
+  (setq vertico-count 10)
+  (setq vertico-scroll-margin 1)
+  (setq vertico-cycle t)
+
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
 
   (vertico-mode)
   (vertico-multiform-mode)
@@ -547,7 +550,7 @@ orderless."
          ("M-g i" . consult-imenu)
          ("M-g I" . consult-imenu-multi)
          ;; M-s bindings (search-map)
-         ("M-s d" . consult-find)
+         ("M-s d" . consult-fd)
          ("M-s D" . consult-locate)
          ("M-s g" . consult-grep)
          ("M-s G" . consult-git-grep)
@@ -932,6 +935,10 @@ orderless."
   :mode ("\\.rest\\'". restclient-mode)
   :config (add-hook 'restclient-mode-hook (lambda ()
                                             (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
+
+(use-package yaml
+  :elpaca nil
+  :mode ("\\.\\(yaml\\|yml\\)\\'" . yaml-ts-mode))
 
 (use-package ob-restclient :after restclient)
 
