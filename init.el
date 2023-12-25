@@ -84,6 +84,7 @@
 
 (pixel-scroll-precision-mode -1)
 ;; (mouse-avoidance-mode 'cat-and-mouse)
+(column-number-mode 1)
 (electric-pair-mode 1)
 (kill-ring-deindent-mode 1)
 (context-menu-mode t)
@@ -456,13 +457,13 @@
                                     orderless-initialism
                                     orderless-flex))
 
-  (defun orderless-company-completion (fn &rest args)
-    "Highlight company matches correctly, and try default completion styles before
-orderless."
-    (let ((orderless-match-faces [completions-common-part])
-          (completion-styles '(basic partial-completion orderless)))
-      (apply fn args)))
-  (advice-add 'company-capf--candidates :around 'orderless-company-completion)
+;;   (defun orderless-company-completion (fn &rest args)
+;;     "Highlight company matches correctly, and try default completion styles before
+;; orderless."
+;;     (let ((orderless-match-faces [completions-common-part])
+;;           (completion-styles '(basic partial-completion orderless)))
+;;       (apply fn args)))
+;;   (advice-add 'company-capf--candidates :around 'orderless-company-completion)
 
   (orderless-define-completion-style orderless+basic
     (orderless-matching-styles '(orderless-literal
@@ -775,7 +776,7 @@ orderless."
   (lsp-headerline-breadcrumb-enable nil))
 
 (use-package dap-mode)
-(use-package lsp-treemacs)
+;; (use-package lsp-treemacs)
 
 (use-package lsp-java
   :hook (java-ts-mode . lsp-deferred))
@@ -790,7 +791,15 @@ orderless."
                             (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
-  :hook ((python-ts-mode . pyvenv-mode)))
+  :hook ((python-ts-mode . pyvenv-mode))
+  :config
+  (add-hook 'pyvenv-post-activate-hooks
+            #'(lambda ()
+                (setq python-shell-interpreter (concat pyvenv-virtual-env "bin/python3"))))
+
+  (add-hook 'pyvenv-post-deactivate-hooks
+            #'(list (lambda ()
+                      (setq python-shell-interpreter "python3")))))
 
 (use-package yasnippet
   :config
@@ -855,7 +864,7 @@ orderless."
   :hook corfu
   :init
   ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-history)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
@@ -890,6 +899,9 @@ orderless."
 ;;   (company-tooltip-minimum 8)
 ;;   :config
 ;;   (global-company-mode))
+
+;; (use-package company-box
+;;   :hook (company-mode . company-box-mode))
 
 (use-package magit
   :defer t
@@ -927,7 +939,9 @@ orderless."
                            "*.ti" ("terminfo/e" "terminfo/e/*")
                            ("terminfo/65" "terminfo/65/*")
                            ("integration" "integration/*")
-                           (:exclude ".dir-locals.el" "*-tests.el"))))
+                           (:exclude ".dir-locals.el" "*-tests.el")))
+  :init
+  (setq eat-term-terminfo-directory eat--terminfo-path))
 
 
 (use-package restclient
@@ -1047,7 +1061,7 @@ orderless."
 (defun ps/todo-file ()
   "Open my TODO.org file"
   (interactive)
-  (find-file "~/Documents/TODO.org"))
+  (find-file "~/Notes/TODO.org"))
 
 
 (defun delete-this-file ()
