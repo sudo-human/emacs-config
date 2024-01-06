@@ -378,9 +378,6 @@
 (use-package wildcharm-theme)
 (use-package wildcharm-light-theme)
 (use-package nimbus-theme)
-(use-package catppuccin-theme
-  :elpaca (:host github :repo "jasonm23/emacs-theme-catpuccin"))
-
 
 (use-package emacs
   :elpaca nil
@@ -667,7 +664,7 @@
 
 (use-package consult-todo
   :defer t
-  :straight (:host github :repo "liuyinz/consult-todo")
+  :elpaca (:host github :repo "liuyinz/consult-todo")
   :after (hl-todo consult))
 
 (use-package consult-flycheck
@@ -708,6 +705,8 @@
 
 (use-package hl-todo
   :defer 1
+  :elpaca (hl-todo :host github
+                   :repo "tarsius/hl-todo")
   :config
   (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
                                 ("FIXME" . "#FF0000")
@@ -954,7 +953,7 @@
                            ("terminfo/65" "terminfo/65/*")
                            ("integration" "integration/*")
                            (:exclude ".dir-locals.el" "*-tests.el")))
-  :init
+  :config
   (setq eat-term-terminfo-directory eat--terminfo-path))
 
 
@@ -974,8 +973,6 @@
   :defer t
   :config
   (setq inferior-lisp-program "ros -Q run"))
-
-(use-package docker-tramp :defer t)
 
 (use-package org
   :mode ("\\.org\\'" . org-mode)
