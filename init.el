@@ -169,6 +169,13 @@
 (use-package diminish :demand t)
 (use-package delight :demand t)
 (use-package hydra)
+(use-package seq
+  :preface (unlaod-feature 'seq t)
+  :elpaca (seq :type git
+               :host nil
+               :repo "https://git.savannah.gnu.org/git/emacs/elpa.git"
+               :branch "externals/seq"))
+
 (elpaca-wait)
 
 
