@@ -16,10 +16,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-11"))
-(set-face-attribute 'default nil :font "JetBrains Mono-11")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-11")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-11")
+(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
+(set-face-attribute 'default nil :font "Iosevka-13")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
+(set-face-attribute 'variable-pitch nil :font "Iosevka-13")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -92,7 +92,6 @@
 (winner-mode 1)
 (repeat-mode)
 (delete-selection-mode 1)
-(save-place-mode t)
 (recentf-mode t)
 (global-display-line-numbers-mode)
 (global-auto-revert-mode 1)
@@ -191,6 +190,10 @@
   (when (memq window-system '(mac ns x pgtk))
     (exec-path-from-shell-initialize)))
 
+(use-package saveplace
+  :elpaca nil
+  :hook (after-init . save-place-mode))
+
 (use-package project
   :elpaca nil
   :general (:keymaps 'project-prefix-map
@@ -265,9 +268,17 @@
 
 (use-package xref
   :elpaca nil
+  :general
+  ("C-M-," . xref-go-forward)
   :config
   (add-hook 'xref-after-return-hook 'recenter)
   (setq xref-history-storage 'xref-window-local-history))
+
+(use-package which-function-mode
+  :elpaca nil
+  :hook ((prog-mode . which-function-mode))
+  :init
+  (setq which-func-unknown ""))
 
 (use-package all-the-icons :defer t)
 (use-package nerd-icons :defer t)
@@ -287,11 +298,11 @@
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :elpaca nil
+  :hook (after-init . savehist-mode)
   :init
   (setq savehist-additional-variables '(register-alist kill-ring)
         savehist-save-minibuffer-history t
-        history-delete-duplicates t)
-  (savehist-mode))
+        history-delete-duplicates t))
 
 (use-package avy
   :general
@@ -333,8 +344,6 @@
         modus-themes-parens-match '(bold intense)))
 
 (use-package color-theme-sanityinc-tomorrow)
-(use-package nezburn
-  :elpaca (:host github :repo "lanjoni/nezburn"))
 (use-package color-theme-sanityinc-solarized
   :elpaca (:host github :repo "sudo-human/color-theme-sanityinc-solarized"))
 (use-package afternoon-theme)
@@ -403,7 +412,7 @@
   (minibuffer-electric-default-mode 1))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
-                                    (load-theme 'ef-trio-dark t)
+                                    (load-theme 'sanityinc-solarized-dark t)
                                     (load custom-file 'noerror)))
 
 (use-package move-text
@@ -663,7 +672,6 @@
 (use-package embark
   :bind
   (("C-," . embark-act)
-   ("C-M-," . embark-dwim)
    ("<f1> B" . embark-bindings))
   :init
   (setq prefix-help-command #'embark-prefix-help-command))
