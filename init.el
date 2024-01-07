@@ -704,9 +704,10 @@
 
 
 (use-package hl-todo
-  :defer 1
   :elpaca (hl-todo :host github
-                   :repo "tarsius/hl-todo")
+                   :repo "tarsius/hl-todo"
+                   :depth nil)
+  :main "hl-todo.el"
   :config
   (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
                                 ("FIXME" . "#FF0000")
