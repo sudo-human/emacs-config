@@ -435,6 +435,7 @@
 (use-package hl-todo
   :elpaca (hl-todo :host github
                    :repo "tarsius/hl-todo"
+                   :version elpaca--latest-tag
                    :depth nil)
   :main "hl-todo.el"
   :config
