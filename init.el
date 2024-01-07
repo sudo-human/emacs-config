@@ -432,6 +432,20 @@
   (advice-add 'move-text-up :after 'indent-region-advice)
   (advice-add 'move-text-down :after 'indent-region-advice))
 
+(use-package hl-todo
+  :elpaca (hl-todo :host github
+                   :repo "tarsius/hl-todo"
+                   :depth nil)
+  :main "hl-todo.el"
+  :config
+  (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
+                                ("FIXME" . "#FF0000")
+                                ("GOTCHA" . "#FF4500")
+                                ("STUB" . "#1E90FF")
+                                ("NOTE" . "#0090FF")
+                                ("XXX" . "#AF0494")))
+  (global-hl-todo-mode))
+
 (use-package harpoon
   :custom
   (harpoon-project-package 'project)
@@ -702,20 +716,6 @@
   :config
   (which-key-mode))
 
-
-(use-package hl-todo
-  :elpaca (hl-todo :host github
-                   :repo "tarsius/hl-todo"
-                   :depth nil)
-  :main "hl-todo.el"
-  :config
-  (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
-                                ("FIXME" . "#FF0000")
-                                ("GOTCHA" . "#FF4500")
-                                ("STUB" . "#1E90FF")
-                                ("NOTE" . "#0090FF")
-                                ("XXX" . "#AF0494")))
-  (global-hl-todo-mode))
 
 (use-package multiple-cursors
   :custom
