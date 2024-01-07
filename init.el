@@ -923,6 +923,18 @@
   :config
   (magit-auto-revert-mode t))
 
+(use-package org
+  :mode ("\\.org\\'" . org-mode)
+  :config
+  (setq org-hide-emphasis-markers t)
+  (add-hook 'org-mode-hook 'org-indent-mode)
+  (org-babel-do-load-languages 'org-babel-load-languages
+                               (append org-babel-load-languages '((restclient . t)))))
+
+(use-package yaml
+  :elpaca nil
+  :mode ("\\.\\(yaml\\|yml\\)\\'" . yaml-ts-mode))
+
 (use-package diff-hl
   :hook ((dired-mode . diff-hl-dired-mode))
   :init
@@ -958,16 +970,11 @@
   :config
   (setq eat-term-terminfo-directory eat--terminfo-path))
 
-
 (use-package restclient
   :defer t
   :mode ("\\.rest\\'". restclient-mode)
   :config (add-hook 'restclient-mode-hook (lambda ()
                                             (setq imenu-generic-expression '((nil "^#+\s+.+" 0))))))
-
-(use-package yaml
-  :elpaca nil
-  :mode ("\\.\\(yaml\\|yml\\)\\'" . yaml-ts-mode))
 
 (use-package ob-restclient :after restclient)
 
@@ -975,14 +982,6 @@
   :defer t
   :config
   (setq inferior-lisp-program "ros -Q run"))
-
-(use-package org
-  :mode ("\\.org\\'" . org-mode)
-  :config
-  (setq org-hide-emphasis-markers t)
-  (add-hook 'org-mode-hook 'org-indent-mode)
-  (org-babel-do-load-languages 'org-babel-load-languages
-                               (append org-babel-load-languages '((restclient . t)))))
 
 
 (use-package sql-indent)
