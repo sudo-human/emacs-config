@@ -16,10 +16,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka-13"))
-(set-face-attribute 'default nil :font "Iosevka-13")
-(set-face-attribute 'fixed-pitch nil :font "Iosevka-13")
-(set-face-attribute 'variable-pitch nil :font "Iosevka-13")
+(add-to-list 'default-frame-alist '(font . "Iosevka-14"))
+(set-face-attribute 'default nil :font "Iosevka-14")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka-14")
+(set-face-attribute 'variable-pitch nil :font "Iosevka-14")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -276,9 +276,10 @@
 (use-package xref
   :elpaca nil
   :general
-  ("C-M-," . xref-go-forward)
+  ("C-M-," 'xref-go-forward)
   :config
   (add-hook 'xref-after-return-hook 'recenter)
+  (add-hook 'xref-after-jump-hook 'recenter)
   (setq xref-history-storage 'xref-window-local-history))
 
 (use-package which-function-mode
@@ -416,7 +417,7 @@
   (minibuffer-electric-default-mode 1))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
-                                    (load-theme 'sanityinc-solarized-dark t)
+                                    (load-theme 'ef-maris-dark t)
                                     (load custom-file 'noerror)))
 
 (use-package move-text
@@ -437,7 +438,6 @@
                    :repo "tarsius/hl-todo"
                    :version elpaca--latest-tag
                    :depth nil)
-  :main "hl-todo.el"
   :config
   (setq hl-todo-keyword-faces '(("TODO" . "#FF0000")
                                 ("FIXME" . "#FF0000")
