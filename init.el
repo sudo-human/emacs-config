@@ -517,6 +517,7 @@
   (general-def vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
   (general-def vertico-map (kbd "M-n") 'vertico-next-group)
   (general-def vertico-map (kbd "M-p") 'vertico-previous-group)
+  (general-def vertico-map (kbd "M-j") 'vertico-quick-jump)
   (setq vertico-count 10)
   (setq vertico-scroll-margin 1)
   (setq vertico-cycle t)
@@ -529,10 +530,12 @@
         '((consult-ripgrep buffer indexed)
           (consult-xref buffer indexed)
           (consult-imenu buffer)
-          (consult-buffer)
+          (consult-buffer flat)
           (xref-find-references buffer)))
   (setq vertico-multiform-categories
-        '((consult-grep buffer))))
+        '((consult-grep buffer)
+          (file grid)
+          (imenu buffer))))
 
 (use-package marginalia
   ;; Either bind `marginalia-cycle' globally or only in the minibuffer
