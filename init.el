@@ -16,10 +16,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka-14"))
-(set-face-attribute 'default nil :font "Iosevka-14")
-(set-face-attribute 'fixed-pitch nil :font "Iosevka-14")
-(set-face-attribute 'variable-pitch nil :font "Iosevka-14")
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-14"))
+(set-face-attribute 'default nil :font "JetBrains Mono-14")
+(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-14")
+(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-14")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -317,6 +317,8 @@
   ("M-j" 'avy-goto-char-timer)
   ("M-n" 'avy-goto-line-below)
   ("M-p" 'avy-goto-line-above)
+  (:keymaps 'isearch-mode-map
+            "C-j" 'avy-isearch)
   :custom
   (avy-timeout-seconds 0.3))
 
@@ -338,7 +340,7 @@
 
 (use-package autothemer)
 (use-package kanagawa-theme
-  :elpaca (:host github :repo "jasonm23/emacs-theme-kanagawa"))
+  :elpaca (:host github :repo "meritamen/emacs-kanagawa-theme"))
 
 (use-package zenburn-theme)
 (use-package modus-themes
@@ -382,6 +384,10 @@
 
 (use-package emacs
   :elpaca nil
+  :general
+  (:keymaps 'ctl-x-map
+            "2" 'split-and-follow-horizontally
+            "3" 'split-and-follow-vertically)
   :init
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
   ;; Add all your customizations prior to loading the themes
@@ -414,7 +420,17 @@
   ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t)
   (minibuffer-depth-indicate-mode 1)
-  (minibuffer-electric-default-mode 1))
+  (minibuffer-electric-default-mode 1)
+  :config
+  (defun split-and-follow-horizontally ()
+    (interactive)
+    (split-window-below)
+    (select-window (get-lru-window)))
+
+  (defun split-and-follow-vertically ()
+    (interactive)
+    (split-window-right)
+    (select-window (get-lru-window))))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
                                     (load-theme 'ef-maris-dark t)
@@ -931,6 +947,14 @@
   :config
   (setq org-hide-emphasis-markers t)
   (add-hook 'org-mode-hook 'org-indent-mode)
+
+  (defun org-mode-auto-fill-conf ()
+    (progn
+      (setq-local fill-column 100
+                  auto-fill-function 'org-auto-fill-function)
+      (auto-fill-mode +1)))
+  (add-hook 'org-mode-hook 'org-mode-auto-fill-conf)
+
   (org-babel-do-load-languages 'org-babel-load-languages
                                (append org-babel-load-languages '((restclient . t)))))
 
