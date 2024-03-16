@@ -749,21 +749,28 @@
    ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
 
-(use-package flycheck
-  :config
-  (flycheck-define-checker python-ruff
-                           "A super fast python linter Ruff!!!"
-                           :command ("ruff-lsp" source)
-                           :error-patterns
-                           ((error line-start (file-name) ":" line ": error :" (message) line-end))
-                           :modes (python-ts-mode python-mode)))
+(use-package flycheck)
+  ;; :config
+  ;; (flycheck-define-checker python-ruff
+  ;;                          "A super fast python linter Ruff!!!"
+  ;;                          :command ("ruff-lsp" source)
+  ;;                          :error-patterns
+  ;;                          ((error line-start (file-name) ":" line ": error :" (message) line-end))
+  ;;                          :modes (python-ts-mode python-mode)))
 
+(use-package yasnippet
+  :config
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets
+  :after yasnippet)
 
 (use-package lsp-mode
   :init
   (setq lsp-idle-delay 0
         lsp-completion-provider :none
         lsp-file-watch-threshold 100000
+        lsp-enable-snippet t
         lsp-keymap-prefix "C-c l")
 
   (defun my/lsp-mode-setup-completion ()
@@ -780,21 +787,21 @@
                   c++-ts-mode-hook))
     (add-hook mode 'lsp-deferred))
   ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  (defvar-local my-flycheck-local-cache nil)
-  (defun my-flycheck-local-checker-get (fn checker property)
-    ;; Only check the buffer local cache for the LSP checker, otherwise we get
-    ;; infinite loops.
-    (if (eq checker 'lsp)
-        (or (alist-get property my-flycheck-local-cache)
-            (funcall fn checker property))
-      (funcall fn checker property)))
-  (advice-add 'flycheck-checker-get
-              :around 'my-flycheck-local-checker-get)
+  ;; (defvar-local my-flycheck-local-cache nil)
+  ;; (defun my-flycheck-local-checker-get (fn checker property)
+  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+  ;;   ;; infinite loops.
+  ;;   (if (eq checker 'lsp)
+  ;;       (or (alist-get property my-flycheck-local-cache)
+  ;;           (funcall fn checker property))
+  ;;     (funcall fn checker property)))
+  ;; (advice-add 'flycheck-checker-get
+  ;;             :around 'my-flycheck-local-checker-get)
 
-  (add-hook 'lsp-managed-mode-hook
-            (lambda ()
-              (when (derived-mode-p 'python-ts-mode)
-                (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
+  ;; (add-hook 'lsp-managed-mode-hook
+  ;;           (lambda ()
+  ;;             (when (derived-mode-p 'python-ts-mode)
+  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
   (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
 
@@ -835,110 +842,106 @@
             #'(list (lambda ()
                       (setq python-shell-interpreter "python3")))))
 
-(use-package yasnippet
-  :config
-  (yas-global-mode 1))
+;; (use-package corfu
+;;   :elpaca (corfu :files (:defaults "extensions/*"))
+;;   :general (:keymaps 'corfu-map
+;;                      "M-j" #'corfu-quick-jump
+;;                      "M-d" #'corfu-doc-toggle
+;;                      "M-n" #'corfu-doc-scroll-up
+;;                      "M-p" #'corfu-doc-scroll-down)
 
-(use-package yasnippet-snippets
-  :after yasnippet)
-
-(use-package corfu
-  :elpaca (corfu :files (:defaults "extensions/*"))
-  :general (:keymaps 'corfu-map
-                     "M-j" #'corfu-quick-jump
-                     "M-d" #'corfu-doc-toggle
-                     "M-n" #'corfu-doc-scroll-up
-                     "M-p" #'corfu-doc-scroll-down)
-
-  ;; Optional customizations
-  :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-auto-prefix 1)
-  (corfu-auto-delay 0.1)
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-  (corfu-preview-current t)    ;; Disable current candidate preview
-  (corfu-preselect 'prompt)
-  (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
-  (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-  (corfu-scroll-margin 3)        ;; Use scroll margin
-
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
-
-  ;; Recommended: Enable Corfu globally.
-  ;; This is recommended since Dabbrev can be used globally (M-/).
-  ;; See also `corfu-excluded-modes'.
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode))
-
-(use-package emacs
-  :elpaca nil
-  :init
-  (setq completion-cycle-threshold nil)
-  
-  ;; Enable indentation+completion using the TAB key.
-  ;; `completion-at-point' is often bound to M-TAB.
-  (setq tab-always-indent 'complete))
-
-(use-package kind-icon
-  :after corfu
-  :custom
-  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
-
-(use-package cape
-  :hook corfu
-  :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
-
-
-;; (use-package company
-;;   :init
-;;   (setq company-text-icons-add-background t)
+;;   ;; Optional customizations
 ;;   :custom
-;;   (company-minimum-prefix-length 1)
-;;   (company-abort-on-unique-match nil)
-;;   (company-show-quick-access t)
-;;   (company-selection-wrap-around t)
-;;   (company-tooltip-align-annotations t)
-;;   (company-dabbrev-other-buffers nil)
-;;   (company-dabbrev-downcase nil)
-;;   (company-idle-delay 0.0)
-;;   (compan-tooltip-idle-delay 0.1)
-;;   (company-backends '(company-capf company-files company-yasnippet))
-;;   (company-text-icons-add-background t)
-;;   (company-format-margin-function #'company-text-icons-margin)
-;;   (company-frontends '(company-pseudo-tooltip-frontend))
-;;   (company-tooltip-minimum 8)
+;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+;;   (corfu-auto t)                 ;; Enable auto completion
+;;   (corfu-auto-prefix 1)
+;;   (corfu-auto-delay 0.1)
+;;   (corfu-separator ?\s)          ;; Orderless field separator
+;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+;;   (corfu-preview-current t)    ;; Disable current candidate preview
+;;   (corfu-preselect 'prompt)
+;;   (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
+;;   (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+;;   (corfu-scroll-margin 3)        ;; Use scroll margin
+
+;;   ;; Enable Corfu only for certain modes.
+;;   ;; :hook ((prog-mode . corfu-mode)
+;;   ;;        (shell-mode . corfu-mode)
+;;   ;;        (eshell-mode . corfu-mode))
+
+;;   ;; Recommended: Enable Corfu globally.
+;;   ;; This is recommended since Dabbrev can be used globally (M-/).
+;;   ;; See also `corfu-excluded-modes'.
+;;   :init
+;;   (global-corfu-mode)
+;;   (corfu-history-mode))
+
+;; (use-package emacs
+;;   :elpaca nil
+;;   :init
+;;   (setq completion-cycle-threshold nil)
+  
+;;   ;; Enable indentation+completion using the TAB key.
+;;   ;; `completion-at-point' is often bound to M-TAB.
+;;   (setq tab-always-indent 'complete))
+
+;; (use-package kind-icon
+;;   :after corfu
+;;   :custom
+;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
 ;;   :config
-;;   (global-company-mode))
+;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+
+;; (use-package cape
+;;   :hook corfu
+;;   :init
+;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
+;;   ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+;;   (add-to-list 'completion-at-point-functions #'cape-file)
+;;   (add-to-list 'completion-at-point-functions #'cape-history)
+;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+;;   (add-to-list 'completion-at-point-functions #'cape-abbrev)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
+;;   )
+
+
+(use-package company
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-abort-on-unique-match nil)
+  (company-show-quick-access t)
+  (company-selection-wrap-around t)
+  (company-tooltip-align-annotations t)
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-downcase nil)
+  (company-idle-delay 0.0)
+  (compan-tooltip-idle-delay 0.1)
+  (company-backends '(company-capf company-files company-yasnippet))
+  (company-text-icons-add-background t)
+  (company-format-margin-function #'company-text-icons-margin)
+  (company-frontends '(company-pseudo-tooltip-frontend))
+  (company-tooltip-minimum 8)
+  :config
+  (global-company-mode))
 
 ;; (use-package company-box
 ;;   :hook (company-mode . company-box-mode))
 
+(use-package transient
+  :elpaca (:host github :repo "magit/transient")
+  :defer t)
+
 (use-package magit
   :defer t
+  :after transient
   :config
   (magit-auto-revert-mode t))
 
