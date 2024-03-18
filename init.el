@@ -95,16 +95,6 @@
 (recentf-mode t)
 (global-display-line-numbers-mode)
 (global-auto-revert-mode 1)
-(make-variable-buffer-local 'global-hl-line-mode)
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-                vterm-mode-hook
-                eat-mode-hook
-                shell-mode-hook
-                eshell-mode-hook))
-  (add-hook mode (lambda ()
-                   (display-line-numbers-mode 0)
-                   (global-hl-line-mode 0))))
 
 (setq frame-title-format
       '(""
@@ -178,6 +168,12 @@
 
 (elpaca-wait)
 
+(use-package hl-line
+  :elpaca nil
+  :config
+  (setq hl-line-sticky-flag nil)
+  (add-hook 'prog-mode-hook #'hl-line-mode)
+  (add-hook 'text-mode-hook #'hl-line-mode))
 
 (use-package popup :defer t)
 (use-package gcmh
@@ -484,9 +480,9 @@
   :config
   (setq harpoon-cache-file (concat user-emacs-directory "harpoon/")))
 
-(use-package rainbow-delimiters
-  :defer t
-  :hook ((prog-mode . rainbow-delimiters-mode)))
+;; (use-package rainbow-delimiters
+;;   :defer t
+;;   :hook ((prog-mode . rainbow-delimiters-mode)))
 
 
 (use-package orderless
@@ -803,7 +799,7 @@
   ;;             (when (derived-mode-p 'python-ts-mode)
   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
-  (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+  ;; (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
 
   (general-def lsp-mode-map
     [remap xref-find-apropos] 'consult-lsp-symbols)
