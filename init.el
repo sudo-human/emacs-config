@@ -81,6 +81,7 @@
 (global-set-key [remap scroll-up-command] 'scroll-up-half)
 (global-set-key [remap scroll-down-command] 'scroll-down-half)
 (global-set-key [remap zap-to-char] 'zap-up-to-char)
+(global-unset-key (kbd "C-z"))
 
 (pixel-scroll-precision-mode -1)
 ;; (mouse-avoidance-mode 'cat-and-mouse)
