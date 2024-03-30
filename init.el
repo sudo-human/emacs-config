@@ -16,10 +16,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-14"))
-(set-face-attribute 'default nil :font "JetBrains Mono-14")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-14")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-14")
+(add-to-list 'default-frame-alist '(font . "Mononoki Nerd Font-15"))
+(set-face-attribute 'default nil :font "Mononoki Nerd Font-15")
+(set-face-attribute 'fixed-pitch nil :font "Mononoki Nerd Font-15")
+(set-face-attribute 'variable-pitch nil :font "Mononoki Nerd Font-15")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -335,6 +335,12 @@
       (add-to-list 'treesit-auto-recipe-list my-js-tsauto-config)
       (global-treesit-auto-mode)))
 
+(use-package treesit-jump
+  :elpaca (:host github :repo "dmille56/treesit-jump" :files ("*.el" "treesit-queries"))
+  :defer t
+  :commands (treesit-jump-transient)
+  :general ("C-c t" 'treesit-jump-transient))
+
 (use-package autothemer)
 (use-package kanagawa-theme
   :elpaca (:host github :repo "meritamen/emacs-kanagawa-theme"))
@@ -378,6 +384,9 @@
 (use-package wildcharm-theme)
 (use-package wildcharm-light-theme)
 (use-package nimbus-theme)
+(use-package timu-macos-theme
+  :config
+  (customize-set-variable 'timu-macos-flavour "dark"))
 
 (use-package emacs
   :elpaca nil
@@ -430,7 +439,7 @@
     (select-window (get-lru-window))))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
-                                    (load-theme 'ef-maris-dark t)
+                                    (load-theme 'modus-vivendi t)
                                     (load custom-file 'noerror)))
 
 (use-package move-text
@@ -695,7 +704,6 @@
 
 (use-package consult-todo
   :defer t
-  :elpaca (:host github :repo "liuyinz/consult-todo")
   :after (hl-todo consult))
 
 (use-package consult-flycheck
@@ -770,9 +778,20 @@
         lsp-enable-snippet t
         lsp-keymap-prefix "C-c l")
 
+  ;; (defun my/lsp-mode-setup-completion ()
+  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+  ;;         '(orderless))) ;; Configure orderless
+
+  (defun my/orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
+
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))) ;; Configure orderless
+          '(orderless))
+    ;; Optionally configure the first word as flex filtered.
+    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+    ;; Optionally configure the cape-capf-buster.
+    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
   :hook
   (lsp-completion-mode . my/lsp-mode-setup-completion)
@@ -801,6 +820,18 @@
   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
   ;; (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+
+  (defun my/orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
+
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))
+    ;; Optionally configure the first word as flex filtered.
+    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+    ;; Optionally configure the cape-capf-buster.
+    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+
 
   (general-def lsp-mode-map
     [remap xref-find-apropos] 'consult-lsp-symbols)
@@ -839,95 +870,96 @@
             #'(list (lambda ()
                       (setq python-shell-interpreter "python3")))))
 
-;; (use-package corfu
-;;   :elpaca (corfu :files (:defaults "extensions/*"))
-;;   :general (:keymaps 'corfu-map
-;;                      "M-j" #'corfu-quick-jump
-;;                      "M-d" #'corfu-doc-toggle
-;;                      "M-n" #'corfu-doc-scroll-up
-;;                      "M-p" #'corfu-doc-scroll-down)
+(use-package corfu
+  :elpaca (corfu :files (:defaults "extensions/*"))
+  :general (:keymaps 'corfu-map
+                     "M-j" #'corfu-quick-jump
+                     "M-d" #'corfu-popupinfo-toggle
+                     "M-n" #'corfu-doc-scroll-up
+                     "M-p" #'corfu-doc-scroll-down)
 
-;;   ;; Optional customizations
-;;   :custom
-;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-;;   (corfu-auto t)                 ;; Enable auto completion
-;;   (corfu-auto-prefix 1)
-;;   (corfu-auto-delay 0.1)
-;;   (corfu-separator ?\s)          ;; Orderless field separator
-;;   (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
-;;   (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
-;;   (corfu-preview-current t)    ;; Disable current candidate preview
-;;   (corfu-preselect 'prompt)
-;;   (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
-;;   (corfu-echo-documentation nil) ;; Disable documentation in the echo area
-;;   (corfu-scroll-margin 3)        ;; Use scroll margin
-
-;;   ;; Enable Corfu only for certain modes.
-;;   ;; :hook ((prog-mode . corfu-mode)
-;;   ;;        (shell-mode . corfu-mode)
-;;   ;;        (eshell-mode . corfu-mode))
-
-;;   ;; Recommended: Enable Corfu globally.
-;;   ;; This is recommended since Dabbrev can be used globally (M-/).
-;;   ;; See also `corfu-excluded-modes'.
-;;   :init
-;;   (global-corfu-mode)
-;;   (corfu-history-mode))
-
-;; (use-package emacs
-;;   :elpaca nil
-;;   :init
-;;   (setq completion-cycle-threshold nil)
-  
-;;   ;; Enable indentation+completion using the TAB key.
-;;   ;; `completion-at-point' is often bound to M-TAB.
-;;   (setq tab-always-indent 'complete))
-
-;; (use-package kind-icon
-;;   :after corfu
-;;   :custom
-;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
-
-;; (use-package cape
-;;   :hook corfu
-;;   :init
-;;   ;; Add `completion-at-point-functions', used by `completion-at-point'.
-;;   ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-;;   (add-to-list 'completion-at-point-functions #'cape-file)
-;;   (add-to-list 'completion-at-point-functions #'cape-history)
-;;   (add-to-list 'completion-at-point-functions #'cape-keyword)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-;;   (add-to-list 'completion-at-point-functions #'cape-abbrev)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-;;   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-;;   )
-
-
-(use-package company
+  ;; Optional customizations
   :custom
-  (company-minimum-prefix-length 1)
-  (company-abort-on-unique-match nil)
-  (company-show-quick-access t)
-  (company-selection-wrap-around t)
-  (company-tooltip-align-annotations t)
-  (company-dabbrev-other-buffers nil)
-  (company-dabbrev-downcase nil)
-  (company-idle-delay 0.0)
-  (compan-tooltip-idle-delay 0.1)
-  (company-backends '(company-capf company-files company-yasnippet))
-  (company-text-icons-add-background t)
-  (company-format-margin-function #'company-text-icons-margin)
-  (company-frontends '(company-pseudo-tooltip-frontend))
-  (company-tooltip-minimum 8)
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-prefix 1)
+  (corfu-auto-delay 0.1)
+  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-quit-at-boundary t)   ;; Never quit at completion boundary
+  (corfu-quit-no-match 'separator)      ;; Never quit, even if there is no match
+  (corfu-preview-current t)    ;; Disable current candidate preview
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match 'quit)     ;; Configure handling of exact matches
+  (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+  (corfu-scroll-margin 3)        ;; Use scroll margin
+
+  ;; Enable Corfu only for certain modes.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
+
+  ;; Recommended: Enable Corfu globally.
+  ;; This is recommended since Dabbrev can be used globally (M-/).
+  ;; See also `corfu-excluded-modes'.
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode))
+
+(use-package emacs
+  :elpaca nil
+  :init
+  (setq completion-cycle-threshold nil)
+  
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (setq tab-always-indent 'complete))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
   :config
-  (global-company-mode))
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+
+(use-package cape
+  :hook corfu
+  :init
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  )
+
+
+;; (use-package company
+;;   :custom
+;;   (company-minimum-prefix-length 1)
+;;   (company-abort-on-unique-match nil)
+;;   (company-show-quick-access t)
+;;   (company-selection-wrap-around t)
+;;   (company-tooltip-align-annotations t)
+;;   (company-dabbrev-other-buffers nil)
+;;   (company-dabbrev-downcase nil)
+;;   (company-idle-delay 0.0)
+;;   (compan-tooltip-idle-delay 0.1)
+;;   (company-backends '(company-capf company-files company-yasnippet))
+;;   (company-text-icons-add-background t)
+;;   (company-format-margin-function #'company-text-icons-margin)
+;;   (company-frontends '(company-pseudo-tooltip-frontend))
+;;   (company-tooltip-minimum 8)
+;;   :config
+;;   (global-company-mode))
 
 ;; (use-package company-box
 ;;   :hook (company-mode . company-box-mode))
@@ -1103,8 +1135,8 @@
   (find-file "~/Notes/TODO.org"))
 
 
-(defun delete-this-file ()
-  "Delete file for current file buffer.  Does not prompt."
+(defun ps/delete-this-file ()
+  "Delete file for current file buffer. Does not prompt."
   (interactive)
   (let ((filename (buffer-file-name)))
     (if (and filename (file-exists-p filename))
@@ -1112,3 +1144,18 @@
           (delete-file filename t)
           (message "Deleted file %s" filename))
       (message "This buffer is not visiting an existing file."))))
+
+(defun ps/google-current-word ()
+  "Search the current word on Google using browse-url."
+  (interactive)
+  (let ((word (thing-at-point 'word)))
+    (if word
+        (browse-url (concat "https://www.google.com/search?q=" word))
+      (message "No word found at point."))))
+
+(defun ps/reverse-text (beg end)
+  "Reverse characters between BEG and END"
+  (interactive "r")
+  (let ((region (buffer-substring beg end)))
+    (delete-region beg end)
+    (insert (nreverse region))))
