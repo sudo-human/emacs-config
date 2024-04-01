@@ -16,10 +16,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Mononoki Nerd Font-15"))
-(set-face-attribute 'default nil :font "Mononoki Nerd Font-15")
-(set-face-attribute 'fixed-pitch nil :font "Mononoki Nerd Font-15")
-(set-face-attribute 'variable-pitch nil :font "Mononoki Nerd Font-15")
+(add-to-list 'default-frame-alist '(font . "Iosevka Comfy-15"))
+(set-face-attribute 'default nil :font "Iosevka Comfy-15")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka Comfy-15")
+(set-face-attribute 'variable-pitch nil :font "Iosevka Comfy-15")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
@@ -82,6 +82,7 @@
 (global-set-key [remap scroll-down-command] 'scroll-down-half)
 (global-set-key [remap zap-to-char] 'zap-up-to-char)
 (global-unset-key (kbd "C-z"))
+(global-unset-key (kbd "C-x C-p"))
 
 (pixel-scroll-precision-mode -1)
 ;; (mouse-avoidance-mode 'cat-and-mouse)
@@ -703,7 +704,6 @@
   (consult-git-log-grep-open-function #'magit-show-commit))
 
 (use-package consult-todo
-  :defer t
   :after (hl-todo consult))
 
 (use-package consult-flycheck
@@ -904,7 +904,18 @@
   :init
   (global-corfu-mode)
   (corfu-history-mode)
-  (corfu-popupinfo-mode))
+  (corfu-popupinfo-mode)
+
+  :config
+  (defun corfu-enable-in-minibuffer ()
+    "Enable Corfu in the minibuffer."
+    (when (and (local-variable-p 'completion-at-point-functions)
+               (not (eq (current-local-map) read-passwd-map)))
+      ;; (setq-local corfu-auto nil) ;; Enable/disable auto completion
+      (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
+                  corfu-popupinfo-delay nil)
+      (corfu-mode 1)))
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer))
 
 (use-package emacs
   :elpaca nil

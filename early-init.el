@@ -20,6 +20,7 @@
 
 (add-to-list 'default-frame-alist '(height . 42))
 (add-to-list 'default-frame-alist '(width . 124))
+(add-to-list 'initial-frame-alist '(fullscreen . maximized))
 
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
