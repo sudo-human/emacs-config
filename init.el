@@ -536,12 +536,11 @@
                                   vertico-repeat
                                   vertico-reverse))
 
-  :config
-  (general-def vertico-map (kbd "<S-backspace>") 'vertico-directory-up)
-  (general-def vertico-map (kbd "M-n") 'vertico-next-group)
-  (general-def vertico-map (kbd "M-p") 'vertico-previous-group)
-  (general-def vertico-map (kbd "M-j") 'vertico-quick-jump)
-  (setq vertico-count 10)
+  :general (:keymaps 'vertico-map
+            "M-j" #'vertico-quick-jump
+            "<S-backspace>" #'vertico-directory-up)
+  :init
+  (setq vertico-count 7)
   (setq vertico-scroll-margin 1)
   (setq vertico-cycle t)
 
@@ -557,7 +556,6 @@
           (xref-find-references buffer)))
   (setq vertico-multiform-categories
         '((consult-grep buffer)
-          (file grid)
           (imenu buffer))))
 
 (use-package marginalia
