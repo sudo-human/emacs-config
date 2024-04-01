@@ -177,6 +177,11 @@
   (add-hook 'prog-mode-hook #'hl-line-mode)
   (add-hook 'text-mode-hook #'hl-line-mode))
 
+(use-package which-key
+  :diminish
+  :config
+  (which-key-mode))
+
 (use-package popup :defer t)
 (use-package gcmh
   :demand t
@@ -621,7 +626,7 @@
          ;; Minibuffer history
          :map minibuffer-local-map
          ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+         ("M-r" . consult-hqistory))                ;; orig. previous-matching-history-element
 
   ;; Enable automatic preview at point in the *Completions* buffer. This is
   ;; relevant when you use the default completion UI.
@@ -733,12 +738,6 @@
   ([remap describe-variable] . helpful-variable)
   ([remap describe-command] . helpful-command)
   ([remap describe-key] . helpful-key))
-
-(use-package which-key
-  :diminish
-  :config
-  (which-key-mode))
-
 
 (use-package multiple-cursors
   :custom
