@@ -180,6 +180,10 @@
 (use-package which-key
   :diminish
   :config
+  (setq which-key-max-display-columns 5
+        which-key-min-column-description-width 32
+        which-key-add-column-padding 3
+        which-key-max-description-length 32)
   (which-key-mode))
 
 (use-package popup :defer t)
