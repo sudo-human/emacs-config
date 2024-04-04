@@ -319,6 +319,8 @@
         savehist-save-minibuffer-history t
         history-delete-duplicates t))
 
+(use-package wgrep)
+
 (use-package avy
   :general
   ("M-j" 'avy-goto-char-timer)
@@ -536,14 +538,14 @@
 (use-package vertico
   :elpaca (vertico :files (:defaults "extensions/*")
                    :includes (vertico-buffer
-                                  vertico-multiform
-                                  vertico-directory
-                                  vertico-flat
-                                  vertico-indexed
-                                  vertico-mouse
-                                  vertico-quick
-                                  vertico-repeat
-                                  vertico-reverse))
+                              vertico-multiform
+                              vertico-directory
+                              vertico-flat
+                              vertico-indexed
+                              vertico-mouse
+                              vertico-quick
+                              vertico-repeat
+                              vertico-reverse))
 
   :general (:keymaps 'vertico-map
             "M-j" #'vertico-quick-jump
@@ -561,7 +563,6 @@
         '((consult-ripgrep buffer indexed)
           (consult-xref buffer indexed)
           (consult-imenu buffer)
-          (consult-buffer flat)
           (xref-find-references buffer)))
   (setq vertico-multiform-categories
         '((consult-grep buffer)
