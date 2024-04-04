@@ -319,7 +319,8 @@
         savehist-save-minibuffer-history t
         history-delete-duplicates t))
 
-(use-package wgrep)
+(use-package wgrep
+  :defer t)
 
 (use-package avy
   :general
