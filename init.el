@@ -324,6 +324,10 @@
 (use-package wgrep
   :defer t)
 
+(use-package ace-window
+  :defer t
+  :general ("M-o" 'ace-window))
+
 (use-package avy
   :general
   ("M-j" 'avy-goto-char-timer)
