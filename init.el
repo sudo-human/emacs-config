@@ -406,6 +406,7 @@
 (use-package timu-macos-theme
   :config
   (customize-set-variable 'timu-macos-flavour "dark"))
+(use-package adwaita-dark-theme)
 
 (use-package emacs
   :elpaca nil
@@ -458,7 +459,7 @@
     (select-window (get-lru-window))))
 
 (add-hook 'elpaca-after-init-hook (lambda ()
-                                    (load-theme 'modus-vivendi t)
+                                    (load-theme 'adwaita-dark t)
                                     (load custom-file 'noerror)))
 
 (use-package move-text
