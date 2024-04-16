@@ -406,7 +406,12 @@
 (use-package timu-macos-theme
   :config
   (customize-set-variable 'timu-macos-flavour "dark"))
-(use-package adwaita-dark-theme)
+(use-package adwaita-dark-theme
+  :config
+  (adwaita-dark-theme-arrow-fringe-bmp-enable)
+  (eval-after-load 'eldoc-frame #'adwaita-dark-theme-eldoc-frame-configuration-enable)
+  (eval-after-load 'diff-hl #'adwaita-dark-theme-diff-hl-fringe-bmp-enable)
+  (eval-after-load 'flycheck #'adwaita-dark-theme-flycheck-fringe-bmp-enable))
 
 (use-package emacs
   :elpaca nil
@@ -1018,8 +1023,11 @@
 (use-package diff-hl
   :hook ((dired-mode . diff-hl-dired-mode))
   :init
+  (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode t)
+  (diff-hl-margin-mode)
+  (diff-hl-show-hunk-mouse-mode)
   (diff-hl-flydiff-mode t))
 
 (use-package git-review
