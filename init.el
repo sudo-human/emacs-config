@@ -792,6 +792,7 @@
   :after yasnippet)
 
 (use-package lsp-mode
+  :elpaca (:host github :repo "emacs-lsp/lsp-mode")
   :init
   (setq lsp-idle-delay 0
         lsp-completion-provider :none
