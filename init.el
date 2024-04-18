@@ -792,7 +792,6 @@
   :after yasnippet)
 
 (use-package lsp-mode
-  :elpaca (:tag "9.0.0")
   :init
   (setq lsp-idle-delay 0
         lsp-completion-provider :none
