@@ -172,8 +172,9 @@
 (use-package display-line-numbers
   :elpaca nil
   :init
-  (global-display-line-numbers-mode)
-  (setq display-line-numbers-type 'relative))
+  (setq display-line-numbers-type 'relative
+        display-line-numbers-width-start t)
+  (global-display-line-numbers-mode))
 
 (use-package hl-line
   :elpaca nil
