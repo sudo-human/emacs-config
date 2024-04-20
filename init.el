@@ -2,6 +2,7 @@
       user-mail-address "sharmajiprateek9@gmail.com")
 
 (setq locale-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8-unix)
 (set-keyboard-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
@@ -1036,6 +1037,13 @@
 ;;   (diff-hl-margin-mode)
 ;;   (diff-hl-show-hunk-mouse-mode)
 ;;   (diff-hl-flydiff-mode t))
+
+(use-package git-gutter
+  :custom
+  (git-gutter:visual-line t)
+  (git-gutter:update-interval 0.2)
+  :init
+  (global-git-gutter-mode +1))
 
 (use-package git-review
   :elpaca (:repo "https://git.sr.ht/~niklaseklund/git-review"))
