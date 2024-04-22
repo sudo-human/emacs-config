@@ -1101,7 +1101,6 @@
   :config
   (add-hook 'redacted-mode-hook (lambda () (read-only-mode (if redacted-mode 1 -1)))))
 
-
 (use-package lemon
   :disabled t
   :elpaca (:type git :repo "https://codeberg.org/emacs-weirdware/lemon.git")
