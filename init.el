@@ -170,11 +170,19 @@
 
 (elpaca-wait)
 
+(defun ps/kill-buffer-and-delete-window ()
+  (interactive)
+  (when (kill-buffer)
+    (delete-window)))
+(general-def ctl-x-map
+  "K" 'ps/kill-buffer-and-delete-window)
+
 (use-package display-line-numbers
   :elpaca nil
   :init
   (setq display-line-numbers-type 'relative
         display-line-numbers-width-start t)
+  (setq-default display-line-numbers-width nil)
   (global-display-line-numbers-mode))
 
 (use-package hl-line
@@ -793,6 +801,19 @@
 (use-package yasnippet-snippets
   :after yasnippet)
 
+(use-package yasnippet-capf
+  :init
+  (defun ps/add-yas-capf ()
+    (add-hook 'completion-at-point-functions #'yasnippet-capf nil t))
+  :hook ((yas-global-mode . ps/add-yas-capf)
+         (yas-minor-mode . ps/add-yas-capf)))
+
+;; (use-package eglot
+;;   :elpaca nil
+;;   :config
+;;   (setq eglot-events-buffer-size 0)
+;;   (setq eglot-extend-to-xref t))
+
 (use-package lsp-mode
   :init
   (setq lsp-idle-delay 0
@@ -812,9 +833,9 @@
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
           '(orderless))
     ;; Optionally configure the first word as flex filtered.
-    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local))
     ;; Optionally configure the cape-capf-buster.
-    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+    ;; (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
   :hook
   (lsp-completion-mode . my/lsp-mode-setup-completion)
@@ -854,7 +875,6 @@
   ;;   (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
   ;;   ;; Optionally configure the cape-capf-buster.
   ;;   (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
-
 
   (general-def lsp-mode-map
     [remap xref-find-apropos] 'consult-lsp-symbols)
@@ -958,21 +978,24 @@
 
 
 (use-package cape
-  :hook corfu
   :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-history)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  (defun ps/add-cape-to-capfs ()
+    ;; Add `completion-at-point-functions', used by `completion-at-point'.
+    ;; (add-hook 'completion-at-point-functions #'cape-dabbrev)
+    (add-hook 'completion-at-point-functions #'cape-file nil t)
+    (add-hook 'completion-at-point-functions #'cape-history nil t)
+    (add-hook 'completion-at-point-functions #'cape-keyword nil t)
+    ;;(add-hook 'completion-at-point-functions #'cape-tex)
+    ;;(add-hook 'completion-at-point-functions #'cape-sgml)
+    ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
+    (add-hook 'completion-at-point-functions #'cape-abbrev nil t)
+    ;;(add-hook 'completion-at-point-functions #'cape-ispell)
+    ;;(add-hook 'completion-at-point-functions #'cape-dict)
+    ;;(add-hook 'completion-at-point-functions #'cape-symbol)
+    ;;(add-hook 'completion-at-point-functions #'cape-line)
+    )
+  :hook ((global-corfu-mode . ps/add-cape-to-capfs)
+         (corfu-mode . ps/add-cape-to-capfs))
   )
 
 
@@ -1028,22 +1051,22 @@
   :elpaca nil
   :mode ("\\.\\(yaml\\|yml\\)\\'" . yaml-ts-mode))
 
-;; (use-package diff-hl
-;;   :hook ((dired-mode . diff-hl-dired-mode))
-;;   :init
-;;   (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
-;;   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
-;;   (global-diff-hl-mode t)
-;;   (diff-hl-margin-mode)
-;;   (diff-hl-show-hunk-mouse-mode)
-;;   (diff-hl-flydiff-mode t))
-
-(use-package git-gutter
-  :custom
-  (git-gutter:visual-line t)
-  (git-gutter:update-interval 0.2)
+(use-package diff-hl
+  :hook ((dired-mode . diff-hl-dired-mode))
   :init
-  (global-git-gutter-mode +1))
+  (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (global-diff-hl-mode t)
+  (diff-hl-margin-mode)
+  (diff-hl-show-hunk-mouse-mode)
+  (diff-hl-flydiff-mode t))
+
+;; (use-package git-gutter
+;;   :custom
+;;   (git-gutter:visual-line t)
+;;   (git-gutter:update-interval 0.2)
+;;   :init
+;;   (global-git-gutter-mode +1))
 
 (use-package git-review
   :elpaca (:repo "https://git.sr.ht/~niklaseklund/git-review"))
