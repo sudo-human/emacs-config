@@ -804,7 +804,7 @@
 (use-package yasnippet-capf
   :init
   (defun ps/add-yas-capf ()
-    (add-hook 'completion-at-point-functions #'yasnippet-capf nil t))
+    (add-hook 'completion-at-point-functions #'yasnippet-capf 90 t))
   :hook ((yas-global-mode . ps/add-yas-capf)
          (yas-minor-mode . ps/add-yas-capf)))
 
@@ -982,13 +982,13 @@
   (defun ps/add-cape-to-capfs ()
     ;; Add `completion-at-point-functions', used by `completion-at-point'.
     ;; (add-hook 'completion-at-point-functions #'cape-dabbrev)
-    (add-hook 'completion-at-point-functions #'cape-file nil t)
-    (add-hook 'completion-at-point-functions #'cape-history nil t)
-    (add-hook 'completion-at-point-functions #'cape-keyword nil t)
+    (add-hook 'completion-at-point-functions #'cape-file 90 t)
+    (add-hook 'completion-at-point-functions #'cape-history 90 t)
+    (add-hook 'completion-at-point-functions #'cape-keyword 90 t)
     ;;(add-hook 'completion-at-point-functions #'cape-tex)
     ;;(add-hook 'completion-at-point-functions #'cape-sgml)
     ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
-    (add-hook 'completion-at-point-functions #'cape-abbrev nil t)
+    (add-hook 'completion-at-point-functions #'cape-abbrev 90 t)
     ;;(add-hook 'completion-at-point-functions #'cape-ispell)
     ;;(add-hook 'completion-at-point-functions #'cape-dict)
     ;;(add-hook 'completion-at-point-functions #'cape-symbol)
