@@ -1109,6 +1109,9 @@
   :config
   (setq inferior-lisp-program "ros -Q run"))
 
+(use-package csv-mode
+  :defer t
+  :commands csv-mode)
 
 (use-package sql-indent)
 
