@@ -1109,6 +1109,10 @@
   :config
   (setq inferior-lisp-program "ros -Q run"))
 
+(use-package racket-mode
+  :custom
+  (racket-program "/Applications/Racket v8.12/bin/racket"))
+
 (use-package csv-mode
   :defer t
   :commands csv-mode)
@@ -1142,10 +1146,10 @@
 ;; My code
 (setq sql-connection-alist
       '((local-db (sql-product 'mysql)
-                  (sql-user "root")
-                  (sql-password "9899")
+                  (sql-user "dbuser")
+                  (sql-password "dbpassword")
                   (sql-server "127.0.0.1")
-                  (sql-database "unittest_plutus_exchange")
+                  (sql-database "new_plutus_xchange")
                   (sql-port 3306))
         (stage-db (sql-product 'mysql)
                   (sql-user "root")
@@ -1202,6 +1206,11 @@
   "Open my TODO.org file"
   (interactive)
   (find-file "~/Notes/TODO.org"))
+
+(defun ps/init-file ()
+  "Open my init.el file"
+  (interactive)
+  (find-file "~/.emacs.d/init.el"))
 
 
 (defun ps/delete-this-file ()
