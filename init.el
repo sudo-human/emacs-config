@@ -320,10 +320,11 @@
         dired-kill-when-opening-new-dired-buffer t)
   (add-hook 'dired-mode-hook 'dired-hide-details-mode))
 
-(use-package all-the-icons-dired
-  :after all-the-icons
+(use-package casual-dired
+  :general (:keymaps 'dired-mode-map
+                     "C-c o" #'casual-dired-tmenu)
   :config
-  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+  (easy-menu-add-item menu nil casual-dired-sort-menu))
 
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
@@ -416,9 +417,6 @@
 (use-package wildcharm-theme)
 (use-package wildcharm-light-theme)
 (use-package nimbus-theme)
-(use-package timu-macos-theme
-  :config
-  (customize-set-variable 'timu-macos-flavour "dark"))
 (use-package adwaita-dark-theme
   :config
   (adwaita-dark-theme-arrow-fringe-bmp-enable)
@@ -795,8 +793,9 @@
   ;;                          :modes (python-ts-mode python-mode)))
 
 (use-package yasnippet
-  :config
-  (yas-global-mode 1))
+  :hook
+  ((prog-mode . yas-minor-mode)
+   (text-mode . yas-minor-mode)))
 
 (use-package yasnippet-snippets
   :after yasnippet)
