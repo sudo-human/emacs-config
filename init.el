@@ -17,10 +17,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka Comfy-15"))
-(set-face-attribute 'default nil :font "Iosevka Comfy-15")
-(set-face-attribute 'fixed-pitch nil :font "Iosevka Comfy-15")
-(set-face-attribute 'variable-pitch nil :font "Iosevka Comfy-15")
+(add-to-list 'default-frame-alist '(font . "Iosevka-15"))
+(set-face-attribute 'default nil :font "Iosevka-15")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka-15")
+(set-face-attribute 'variable-pitch nil :font "Iosevka-15")
 
 (setq-default visual-bell t
               read-process-output-max (* 3 1024 1024)
