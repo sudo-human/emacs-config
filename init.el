@@ -375,8 +375,6 @@
   :general ("C-c t" 'treesit-jump-transient))
 
 (use-package autothemer)
-(use-package kanagawa-theme
-  :elpaca (:host github :repo "meritamen/emacs-kanagawa-theme"))
 
 (use-package zenburn-theme)
 (use-package modus-themes
