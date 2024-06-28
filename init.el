@@ -352,6 +352,9 @@
   :custom
   (avy-timeout-seconds 0.3))
 
+(use-package casual-avy
+  :general ("M-g M-j" 'casual-avy-tmenu))
+
 (if (not (version<= emacs-version "29.0"))
     (use-package treesit-auto
       :demand t
