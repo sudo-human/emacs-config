@@ -61,6 +61,11 @@
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 
+(let ((ps/cache-dir "~/.local/share/emacs/"))
+  (unless (file-exists-p ps/cache-dir)
+    (make-directory ps/cache-dir))
+  (defvar ps/cache-dir ps/cache-dir))
+
 (defun scroll-up-half ()
   (interactive)
   (scroll-up-command
@@ -331,7 +336,8 @@
   :elpaca nil
   :hook (after-init . savehist-mode)
   :init
-  (setq savehist-additional-variables '(register-alist kill-ring)
+  (setq savehist-file (concat ps/cache-dir "savehist.el")
+        savehist-additional-variables '(register-alist kill-ring command-history)
         savehist-save-minibuffer-history t
         history-delete-duplicates t))
 
@@ -1050,6 +1056,16 @@
 (use-package yaml
   :elpaca nil
   :mode ("\\.\\(yaml\\|yml\\)\\'" . yaml-ts-mode))
+
+(use-package outline-yaml
+  :ensure t
+  :straight (outline-yaml
+             :type git
+             :host github
+             :repo "jamescherti/outline-yaml.el")
+  :hook
+  ((yaml-mode . outline-yaml-minor-mode)
+   (yaml-ts-mode . outline-yaml-minor-mode)))
 
 (use-package diff-hl
   :hook ((dired-mode . diff-hl-dired-mode))
