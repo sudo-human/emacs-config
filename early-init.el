@@ -63,3 +63,6 @@
 
 (setq initial-scratch-message nil)
 (setq inhibit-startup-screen t)
+(setq-default read-process-output-max (* 4 1024 1024))
+(setq-default process-adaptive-read-buffering nil)
+

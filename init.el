@@ -23,7 +23,6 @@
 (set-face-attribute 'variable-pitch nil :font "JetBrains Mono-14")
 
 (setq-default visual-bell t
-              read-process-output-max (* 3 1024 1024)
               indent-tabs-mode nil
               set-mark-command-repeat-pop t
               vc-follow-symlinks t
@@ -429,7 +428,8 @@
   (adwaita-dark-theme-arrow-fringe-bmp-enable)
   (eval-after-load 'eldoc-frame #'adwaita-dark-theme-eldoc-frame-configuration-enable)
   ;; (eval-after-load 'diff-hl #'adwaita-dark-theme-diff-hl-fringe-bmp-enable)
-  (eval-after-load 'flycheck #'adwaita-dark-theme-flycheck-fringe-bmp-enable))
+  (eval-after-load 'flycheck #'adwaita-dark-theme-flycheck-fringe-bmp-enable)
+  (eval-after-load 'flymake #'adwaita-dark-theme-flymake-fringe-bmp-enable))
 
 (use-package emacs
   :elpaca nil
