@@ -919,6 +919,9 @@
             #'(list (lambda ()
                       (setq python-shell-interpreter "python3")))))
 
+(use-package python-black
+  :after python)
+
 (use-package corfu
   :elpaca (corfu :files (:defaults "extensions/*"))
   :general (:keymaps 'corfu-map
