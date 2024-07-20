@@ -17,10 +17,10 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(add-to-list 'default-frame-alist '(font . "JetBrains Mono-14"))
-(set-face-attribute 'default nil :font "JetBrains Mono-14")
-(set-face-attribute 'fixed-pitch nil :font "JetBrains Mono-14")
-(set-face-attribute 'variable-pitch nil :font "JetBrains Mono-14")
+(add-to-list 'default-frame-alist '(font . "Iosevka-15"))
+(set-face-attribute 'default nil :font "Iosevka-15")
+(set-face-attribute 'fixed-pitch nil :font "Iosevka-15")
+(set-face-attribute 'variable-pitch nil :font "Iosevka-15")
 
 (setq-default visual-bell t
               indent-tabs-mode nil
@@ -302,7 +302,8 @@
 (use-package xref
   :elpaca nil
   :general
-  ("C-M-," 'xref-go-forward)
+  ("C-M-," 'xref-go-forward
+   "s-<mouse-1>" 'xref-find-definitions)
   :config
   (add-hook 'xref-after-return-hook 'recenter)
   (add-hook 'xref-after-jump-hook 'recenter)
@@ -427,7 +428,7 @@
   :config
   (adwaita-dark-theme-arrow-fringe-bmp-enable)
   (eval-after-load 'eldoc-frame #'adwaita-dark-theme-eldoc-frame-configuration-enable)
-  ;; (eval-after-load 'diff-hl #'adwaita-dark-theme-diff-hl-fringe-bmp-enable)
+  (eval-after-load 'diff-hl #'adwaita-dark-theme-diff-hl-fringe-bmp-enable)
   (eval-after-load 'flycheck #'adwaita-dark-theme-flycheck-fringe-bmp-enable)
   (eval-after-load 'flymake #'adwaita-dark-theme-flymake-fringe-bmp-enable))
 
@@ -541,13 +542,13 @@
 (use-package orderless
   :config
   (setq orderless-component-separator 'orderless-escapable-split-on-space
-        completion-styles '(basic substring initials flex orderless)
+        completion-styles '(basic substring initials orderless)
         completion-category-defaults nil
         orderless-matching-styles '(orderless-literal
-                                    orderless-regexp
                                     orderless-prefixes
                                     orderless-initialism
-                                    orderless-flex))
+                                    orderless-flex
+                                    orderless-regexp))
 
 ;;   (defun orderless-company-completion (fn &rest args)
 ;;     "Highlight company matches correctly, and try default completion styles before
@@ -1076,7 +1077,7 @@
   (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode t)
-  (diff-hl-margin-mode)
+  ;; (diff-hl-margin-mode)
   (diff-hl-show-hunk-mouse-mode)
   (diff-hl-flydiff-mode t))
 
