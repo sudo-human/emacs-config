@@ -639,7 +639,8 @@
          ("<help> t" . consult-theme)
          ;; M-g bindings in `goto-map'
          ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flycheck)               ;; Alternative: consult-flymake
+         ;; ("M-g f" . consult-flycheck)
+         ("M-g f" . consult-flymake)
          ("M-g g" . consult-goto-line)             ;; orig. goto-line
          ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
          ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
@@ -791,7 +792,7 @@
    ("C-M-<mouse-1>" . mc/add-cursor-on-click)))
 
 
-(use-package flycheck)
+;; (use-package flycheck)
   ;; :config
   ;; (flycheck-define-checker python-ruff
   ;;                          "A super fast python linter Ruff!!!"
@@ -815,99 +816,114 @@
   :hook ((yas-global-mode . ps/add-yas-capf)
          (yas-minor-mode . ps/add-yas-capf)))
 
-;; (use-package eglot
-;;   :elpaca nil
-;;   :config
-;;   (setq eglot-events-buffer-size 0)
-;;   (setq eglot-extend-to-xref t))
-
-(use-package lsp-mode
-  :init
-  (setq lsp-idle-delay 0
-        lsp-completion-provider :none
-        lsp-file-watch-threshold 100000
-        lsp-enable-snippet t
-        lsp-keymap-prefix "C-c l")
-
-  ;; (defun my/lsp-mode-setup-completion ()
-  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-  ;;         '(orderless))) ;; Configure orderless
-
-  (defun my/orderless-dispatch-flex-first (_pattern index _total)
-    (and (eq index 0) 'orderless-flex))
-
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))
-    ;; Optionally configure the first word as flex filtered.
-    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local))
-    ;; Optionally configure the cape-capf-buster.
-    ;; (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
-
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion)
-  :commands (lsp lsp-deferred)
+(use-package eglot
+  :elpaca nil
+  ;; :hook
+  ;; ((python-ts-mode . eglot-ensure))
+  :general
+  (:keymaps 'eglot-mode-map
+            :prefix "C-c l"
+            "e" 'eglot
+            "r" 'eglot-rename
+            "a" 'eglot-code-actions)
   :config
-  (dolist (mode '(c-ts-mode-hook
-                  js-ts-mode-hook
-                  typescript-ts-mode-hook
-                  c++-ts-mode-hook))
-    (add-hook mode 'lsp-deferred))
-  ;; Add buffer local Flycheck checkers after LSP for different major modes.
-  ;; (defvar-local my-flycheck-local-cache nil)
-  ;; (defun my-flycheck-local-checker-get (fn checker property)
-  ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
-  ;;   ;; infinite loops.
-  ;;   (if (eq checker 'lsp)
-  ;;       (or (alist-get property my-flycheck-local-cache)
-  ;;           (funcall fn checker property))
-  ;;     (funcall fn checker property)))
-  ;; (advice-add 'flycheck-checker-get
-  ;;             :around 'my-flycheck-local-checker-get)
+  ;; (setq eglot-events-buffer-size 0)
+  (add-to-list 'completion-category-overrides '(eglot (styles orderless)))
+  (add-to-list 'completion-category-overrides '(eglot-capf (styles orderless)))
+  (setq eglot-events-buffer-config '(:size 0 :format full))
+  (setq eglot-extend-to-xref t))
 
-  ;; (add-hook 'lsp-managed-mode-hook
-  ;;           (lambda ()
-  ;;             (when (derived-mode-p 'python-ts-mode)
-  ;;               (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
+(use-package consult-eglot
+  :after eglot
+  :general ([remap xref-find-apropos] 'consult-eglot-symbols))
 
-  ;; (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+;; (use-package lsp-mode
+;;   :init
+;;   (setq lsp-idle-delay 0
+;;         lsp-completion-provider :none
+;;         lsp-file-watch-threshold 100000
+;;         lsp-enable-snippet t
+;;         lsp-keymap-prefix "C-c l")
 
-  ;; (defun my/orderless-dispatch-flex-first (_pattern index _total)
-  ;;   (and (eq index 0) 'orderless-flex))
+;;   ;; (defun my/lsp-mode-setup-completion ()
+;;   ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;   ;;         '(orderless))) ;; Configure orderless
 
-  ;; (defun my/lsp-mode-setup-completion ()
-  ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-  ;;         '(orderless))
-  ;;   ;; Optionally configure the first word as flex filtered.
-  ;;   (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
-  ;;   ;; Optionally configure the cape-capf-buster.
-  ;;   (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+;;   (defun my/orderless-dispatch-flex-first (_pattern index _total)
+;;     (and (eq index 0) 'orderless-flex))
 
-  (general-def lsp-mode-map
-    [remap xref-find-apropos] 'consult-lsp-symbols)
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+;;   (defun my/lsp-mode-setup-completion ()
+;;     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;           '(orderless))
+;;     ;; Optionally configure the first word as flex filtered.
+;;     (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local))
+;;     ;; Optionally configure the cape-capf-buster.
+;;     ;; (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
 
-(use-package lsp-ui
-  :after lsp-mode
-  :custom
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-peek-enable nil)
-  (lsp-headerline-breadcrumb-enable nil))
+;;   :hook
+;;   (lsp-completion-mode . my/lsp-mode-setup-completion)
+;;   :commands (lsp lsp-deferred)
+;;   :config
+;;   (dolist (mode '(c-ts-mode-hook
+;;                   js-ts-mode-hook
+;;                   typescript-ts-mode-hook
+;;                   c++-ts-mode-hook))
+;;     (add-hook mode 'lsp-deferred))
+;;   ;; Add buffer local Flycheck checkers after LSP for different major modes.
+;;   ;; (defvar-local my-flycheck-local-cache nil)
+;;   ;; (defun my-flycheck-local-checker-get (fn checker property)
+;;   ;;   ;; Only check the buffer local cache for the LSP checker, otherwise we get
+;;   ;;   ;; infinite loops.
+;;   ;;   (if (eq checker 'lsp)
+;;   ;;       (or (alist-get property my-flycheck-local-cache)
+;;   ;;           (funcall fn checker property))
+;;   ;;     (funcall fn checker property)))
+;;   ;; (advice-add 'flycheck-checker-get
+;;   ;;             :around 'my-flycheck-local-checker-get)
 
-(use-package dap-mode)
-;; (use-package lsp-treemacs)
+;;   ;; (add-hook 'lsp-managed-mode-hook
+;;   ;;           (lambda ()
+;;   ;;             (when (derived-mode-p 'python-ts-mode)
+;;   ;;               (setq my-flycheck-local-cache '((next-checkers . (python-ruff)))))))
 
-(use-package lsp-java
-  :hook (java-ts-mode . lsp-deferred))
+;;   ;; (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
 
-(use-package lsp-pyright
-  :init
-  (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
-  (setq lsp-pyright-multi-root nil
-        lsp-pyright-typechecking-mode "off")
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp-deferred))))  ; or lsp
+;;   ;; (defun my/orderless-dispatch-flex-first (_pattern index _total)
+;;   ;;   (and (eq index 0) 'orderless-flex))
+
+;;   ;; (defun my/lsp-mode-setup-completion ()
+;;   ;;   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+;;   ;;         '(orderless))
+;;   ;;   ;; Optionally configure the first word as flex filtered.
+;;   ;;   (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+;;   ;;   ;; Optionally configure the cape-capf-buster.
+;;   ;;   (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+
+;;   (general-def lsp-mode-map
+;;     [remap xref-find-apropos] 'consult-lsp-symbols)
+;;   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+
+;; (use-package lsp-ui
+;;   :after lsp-mode
+;;   :custom
+;;   (lsp-ui-doc-enable nil)
+;;   (lsp-ui-peek-enable nil)
+;;   (lsp-headerline-breadcrumb-enable nil))
+
+;; (use-package dap-mode)
+;; ;; (use-package lsp-treemacs)
+
+;; (use-package lsp-java
+;;   :hook (java-ts-mode . lsp-deferred))
+
+;; (use-package lsp-pyright
+;;   :init
+;;   (advice-add 'lsp :before (lambda (&rest _args) (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+;;   (setq lsp-pyright-multi-root nil
+;;         lsp-pyright-typechecking-mode "off")
+;;   :hook (python-ts-mode . (lambda ()
+;;                             (require 'lsp-pyright)
+;;                             (lsp-deferred))))  ; or lsp
 
 (use-package pyvenv
   :hook ((python-ts-mode . pyvenv-mode))
