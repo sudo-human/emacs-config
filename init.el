@@ -18,6 +18,7 @@
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
 (add-to-list 'default-frame-alist '(font . "Iosevka-15"))
+(add-to-list 'default-frame-alist '(cursor-color . "orange"))
 (set-face-attribute 'default nil :font "Iosevka-15")
 (set-face-attribute 'fixed-pitch nil :font "Iosevka-15")
 (set-face-attribute 'variable-pitch nil :font "Iosevka-15")
