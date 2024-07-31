@@ -822,13 +822,14 @@
   ;; :hook
   ;; ((python-ts-mode . eglot-ensure))
   :general
+  ("C-c l e" 'eglot)
+  :general-config
   (:keymaps 'eglot-mode-map
             :prefix "C-c l"
-            "e" 'eglot
+            "e" 'eglot-reconnect
             "r" 'eglot-rename
             "a" 'eglot-code-actions)
   :config
-  ;; (setq eglot-events-buffer-size 0)
   (add-to-list 'completion-category-overrides '(eglot (styles orderless)))
   (add-to-list 'completion-category-overrides '(eglot-capf (styles orderless)))
   (setq eglot-events-buffer-config '(:size 0 :format full))
